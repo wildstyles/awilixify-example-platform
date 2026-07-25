@@ -7,9 +7,7 @@ const app = DIContext.create(AppModule, {
 	globalModules: [
 		DevtoolsModule({
 			host: "0.0.0.0",
-			port: 3001,
 			traceHistoryFile: false,
-			ui: false,
 		}),
 	],
 });

@@ -1,0 +1,10 @@
+services:
+  devtools-ui:
+    image: ghcr.io/wildstyles/awilixify-devtools-ui:0.1.0
+    environment:
+      DEVTOOLS_API_URL: http://host.docker.internal:3221
+    ports:
+      - "3222:3222"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+

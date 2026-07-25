@@ -10,8 +10,19 @@ pnpm install
 pnpm dev
 ```
 
-The API app runs the DevTools API at `http://localhost:3001`. The embedded
-DevTools UI is disabled because the UI will run as a separate process.
+The API app runs the DevTools API at `http://localhost:3221`.
+
+In another terminal, start the DevTools UI:
+
+```sh
+docker compose up -d
+```
+
+Open `http://localhost:3222`. To stop the UI:
+
+```sh
+docker compose down
+```
 
 ## Checks
 
