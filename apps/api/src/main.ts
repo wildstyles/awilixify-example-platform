@@ -2,13 +2,16 @@ import { DIContext } from "awilixify";
 import { DevtoolsModule } from "awilixify-devtools";
 
 import { AppModule } from "./app.module.js";
+import { HttpModule } from "./integrations/http/http.module.js";
 
 const app = DIContext.create(AppModule, {
 	globalModules: [
 		DevtoolsModule({
+			appUrl: "http://127.0.0.1:3000",
 			host: "0.0.0.0",
 			traceHistoryFile: false,
 		}),
+		HttpModule,
 	],
 });
 

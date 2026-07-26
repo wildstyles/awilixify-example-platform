@@ -1,8 +1,13 @@
 import { createModule, type ModuleDef } from "awilixify";
 
+import { StatusController } from "./status.controller.js";
+
 class AppService {
-	getStatus(): string {
-		return "ok";
+	getStatus() {
+		return {
+			service: "awilixify-example-platform",
+			status: "ok",
+		} as const;
 	}
 }
 
@@ -14,6 +19,7 @@ export type AppModuleDef = ModuleDef<{
 
 export const AppModule = createModule<AppModuleDef>({
 	name: "AppModule",
+	controllers: [StatusController],
 	providers: {
 		appService: AppService,
 	},

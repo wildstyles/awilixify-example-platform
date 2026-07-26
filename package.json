@@ -3,10 +3,14 @@
 	"private": true,
 	"packageManager": "pnpm@10.34.4",
 	"scripts": {
-		"dev": "turbo run dev",
+		"dev": "pnpm ui:up && turbo run dev",
+		"dev:api": "turbo run dev",
 		"lint": "turbo run lint",
 		"lint:fix": "turbo run lint:fix",
-		"typecheck": "turbo run typecheck"
+		"typecheck": "turbo run typecheck",
+		"ui:down": "docker compose down",
+		"ui:logs": "docker compose logs --follow devtools-ui",
+		"ui:up": "docker compose up --detach devtools-ui"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.3.15",
