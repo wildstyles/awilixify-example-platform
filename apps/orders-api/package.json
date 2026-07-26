@@ -1,0 +1,32 @@
+{
+	"name": "@awilixify-example-platform/orders-api",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "tsx watch src/main.ts",
+		"generate": "pnpm generate:warehouse-client && pnpm generate:warehouse-messaging && pnpm generate:warehouse-events",
+		"generate:warehouse-messaging": "awilixify codegen --config src/modules/warehouse-messaging/awilixify-codegen.config.mjs && biome format --write src/modules/warehouse-messaging/generated src/modules/warehouse-messaging/warehouse-messaging.module.ts",
+		"generate:warehouse-events": "awilixify codegen --config src/modules/warehouse-events/awilixify-codegen.config.mjs && biome format --write src/modules/warehouse-events/generated src/modules/warehouse-events/warehouse-events.module.ts",
+		"generate:warehouse-client": "orval --config src/modules/warehouse-gateway/orval.config.mjs && awilixify codegen --config src/modules/warehouse-gateway/awilixify-codegen.config.mjs && biome format --write src/modules/warehouse-gateway/generated",
+		"lint": "biome check src",
+		"lint:fix": "biome check --write src",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@awilixify-example-platform/rabbitmq": "workspace:*",
+		"@awilixify/devtools": "^0.2.0",
+		"@fastify/swagger": "^9.7.0",
+		"@fastify/swagger-ui": "^6.0.0",
+		"@fastify/type-provider-typebox": "^5.0.0",
+		"@sinclair/typebox": "^0.34.49",
+		"awilix": "^12.0.5",
+		"awilixify": "^3.2.0",
+		"fastify": "^5.8.5"
+	},
+	"devDependencies": {
+		"@awilixify/cli": "^0.1.0",
+		"@types/node": "^22.15.21",
+		"orval": "8.18.0",
+		"tsx": "^4.20.0"
+	}
+}

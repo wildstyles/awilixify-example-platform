@@ -1,0 +1,18 @@
+{
+  "description": "Project-local approval for curl requests to loopback hosts.",
+  "hooks": {
+    "PermissionRequest": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/allow_localhost_curl.py\"",
+            "timeout": 5,
+            "statusMessage": "Checking localhost curl request"
+          }
+        ]
+      }
+    ]
+  }
+}

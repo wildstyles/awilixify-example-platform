@@ -1,0 +1,26 @@
+{
+	"name": "@awilixify-example-platform/warehouse-api",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "tsx watch src/main.ts",
+		"lint": "biome check src",
+		"lint:fix": "biome check --write src",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@awilixify-example-platform/rabbitmq": "workspace:*",
+		"@awilixify/devtools": "^0.2.0",
+		"@fastify/swagger": "^9.7.0",
+		"@fastify/swagger-ui": "^6.0.0",
+		"@fastify/type-provider-typebox": "^5.0.0",
+		"@sinclair/typebox": "^0.34.49",
+		"awilix": "^12.0.5",
+		"awilixify": "^3.2.0",
+		"fastify": "^5.8.5"
+	},
+	"devDependencies": {
+		"@types/node": "^22.15.21",
+		"tsx": "^4.20.0"
+	}
+}

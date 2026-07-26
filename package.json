@@ -3,17 +3,17 @@
 	"private": true,
 	"packageManager": "pnpm@10.34.4",
 	"scripts": {
-		"dev": "pnpm ui:up && turbo run dev",
-		"dev:api": "turbo run dev",
+		"ai:init": "awilixify devtools init-ai",
+		"dev": "docker compose up --detach rabbitmq && concurrently --kill-others --names services,ui --prefix-colors cyan,green \"turbo run dev\" \"docker compose up devtools-ui\"",
+		"generate": "turbo run generate",
 		"lint": "turbo run lint",
 		"lint:fix": "turbo run lint:fix",
-		"typecheck": "turbo run typecheck",
-		"ui:down": "docker compose down",
-		"ui:logs": "docker compose logs --follow devtools-ui",
-		"ui:up": "docker compose up --detach devtools-ui"
+		"typecheck": "turbo run typecheck"
 	},
 	"devDependencies": {
+		"@awilixify/cli": "^0.1.0",
 		"@biomejs/biome": "2.3.15",
+		"concurrently": "^9.2.1",
 		"turbo": "^2.5.0",
 		"typescript": "^5.9.3"
 	}

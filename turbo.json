@@ -5,6 +5,9 @@
 			"cache": false,
 			"persistent": true
 		},
+		"generate": {
+			"cache": false
+		},
 		"lint": {},
 		"lint:fix": {
 			"cache": false

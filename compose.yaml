@@ -1,10 +1,19 @@
 services:
+  rabbitmq:
+    image: rabbitmq:4-management
+    ports:
+      - "5673:5672"
+      - "15672:15672"
+
   devtools-ui:
-    image: ghcr.io/wildstyles/awilixify-devtools-ui:0.1.0
+    image: ghcr.io/awilixify/awilixify-devtools-ui:0.1.1
     environment:
-      DEVTOOLS_API_URL: http://host.docker.internal:3221
+      DEVTOOLS_TARGETS: |
+        - serviceName: orders
+          url: http://host.docker.internal:3221
+        - serviceName: warehouse
+          url: http://host.docker.internal:3223
     ports:
       - "3222:3222"
     extra_hosts:
       - "host.docker.internal:host-gateway"
-
