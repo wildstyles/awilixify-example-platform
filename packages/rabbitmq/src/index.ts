@@ -11,3 +11,4 @@ export {
 	type MessagePayload,
 	type RabbitMessageContext,
 } from "./rabbitmq/rabbitmq.types.js";
+export { RabbitMqRegistryModule } from "./rabbitmq-registry/rabbitmq-registry.module.js";

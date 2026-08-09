@@ -4,6 +4,7 @@
 	"packageManager": "pnpm@10.34.4",
 	"scripts": {
 		"ai:init": "awilixify devtools init-ai",
+		"build": "turbo run build",
 		"dev": "docker compose up --detach rabbitmq && concurrently --kill-others --names services,ui --prefix-colors cyan,green \"turbo run dev\" \"docker compose up devtools-ui\"",
 		"generate": "turbo run generate",
 		"lint": "turbo run lint",

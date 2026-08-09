@@ -37,6 +37,10 @@ export class RabbitMqRegistry {
 		});
 	}
 
+	isConnected(): boolean {
+		return this.connection.isConnected();
+	}
+
 	async publish<TMessage extends RabbitMessage>(
 		input: RabbitRegistryPublishInput<TMessage>,
 	): Promise<void> {

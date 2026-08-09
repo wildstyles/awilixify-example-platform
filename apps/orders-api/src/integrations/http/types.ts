@@ -3,6 +3,7 @@ import type { Static, TSchema } from "@sinclair/typebox";
 import type { RouteSchema } from "awilixify/http";
 import type {
 	FastifyInstance as DefaultFastifyInstance,
+	FastifyReply as DefaultFastifyReply,
 	FastifyBaseLogger,
 	FastifyRequest,
 	RawReplyDefaultExpression,
@@ -17,6 +18,8 @@ export type FastifyInstance = DefaultFastifyInstance<
 	FastifyBaseLogger,
 	TypeBoxTypeProvider
 >;
+
+export type Reply = DefaultFastifyReply;
 
 export type Request<S extends RouteSchema> = FastifyRequest<{
 	Querystring: S["querystring"] extends TSchema

@@ -1,0 +1,15 @@
+.git
+.github
+.turbo
+.pnpm-store
+**/.awilixify-devtools
+**/.env
+**/.env.*
+**/dist
+**/node_modules
+**/*.log
+**/*.test.*
+docs
+infra
+kubernetes
+node_modules

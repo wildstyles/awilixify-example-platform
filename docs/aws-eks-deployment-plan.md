@@ -78,8 +78,9 @@ source repositories to be checked out together.
 - Orders, inventory, and DevTools traces are process-local. Traces can be
   written to `.awilixify-devtools/traces.json`, but the applications have no
   durable database.
-- Production build scripts, emitted JavaScript, health endpoints, Dockerfiles,
-  Helm charts, Terraform, and GitHub workflows still need to be added.
+- Production builds, validated configuration, health endpoints, and graceful
+  shutdown are now present. Dockerfiles, Helm charts, Terraform, and GitHub
+  workflows still need to be added.
 
 Because application and trace state are process-local, begin with one replica
 of each API. Scaling comes after storage and trace routing are redesigned.
@@ -161,8 +162,6 @@ Introduce this structure as the phases require it:
 4. Add a root `build` script and declare build outputs/dependencies in
    `turbo.json`.
 5. Verify the compiled services run with Node, without `tsx`.
-6. Add focused tests for configuration validation, health behavior, and the
-   main Orders-to-Warehouse workflow.
 
 ### Runtime behavior
 
@@ -181,9 +180,9 @@ DEVTOOLS_TRACE_HISTORY_FILE
 RABBITMQ_URL
 RABBITMQ_ADVERTISED_HOST
 WAREHOUSE_API_URL
-LOG_LEVEL
 COMMIT_SHA
 IMAGE_VERSION
+SHUTDOWN_TIMEOUT_MS
 ```
 
 Add:
@@ -194,16 +193,22 @@ Add:
 - graceful `SIGTERM` handling for HTTP and RabbitMQ;
 - deterministic demo fixtures and a documented reset procedure.
 
+Set `COMMIT_SHA` and `IMAGE_VERSION` in the image-build/deployment workflow and
+set `DEPLOYMENT_ENVIRONMENT` in the Helm values for each environment. Kubernetes
+does not infer this release metadata from the image, so the Deployment should
+pass the three values to each container as environment variables.
+
 RabbitMQ may be part of readiness because both services publish and consume
 messages. Do not make Orders readiness depend on Warehouse HTTP availability;
 that would spread a Warehouse outage to all Orders pods.
 
 ### Exit criteria
 
-- `pnpm install --frozen-lockfile`, lint, typecheck, tests, and build pass from a
-  clean checkout.
+- `pnpm install --frozen-lockfile`, lint, typecheck, and build pass from a clean
+  checkout.
 - Both compiled applications start with Node.
-- Configuration contains no dependency on another service at `localhost`.
+- Deployed configuration can replace every cross-service `localhost` default
+  with a Kubernetes Service or managed-service endpoint.
 - Probes and graceful shutdown work locally.
 
 ## Phase 2: build production containers
@@ -385,7 +390,7 @@ Create `checks.yml` to run:
 1. `pnpm install --frozen-lockfile`;
 2. lint;
 3. typecheck;
-4. tests;
+4. tests when the repository introduces an automated test suite;
 5. production build;
 6. container build without push;
 7. `helm lint` and `helm template`;
@@ -656,7 +661,7 @@ The first verifier only reports evidence; it does not edit code.
 
 ### A. Deployable application and images
 
-- [ ] Clean install, lint, typecheck, tests, and production build pass.
+- [ ] Clean install, lint, typecheck, and production build pass.
 - [ ] Compiled services run with Node and shut down gracefully.
 - [ ] Health and release metadata endpoints work.
 - [ ] Production images run as non-root and contain no secrets.

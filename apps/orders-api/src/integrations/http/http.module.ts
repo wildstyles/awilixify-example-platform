@@ -3,12 +3,14 @@ import {
 	type InferGlobalDependencies,
 	type ModuleDef,
 } from "awilixify";
+import { ConfigModule } from "../config/config.module.js";
 import { FastifyService } from "./fastify.service.js";
 import { FastifyHttpInitializer } from "./fastify-http.initializer.js";
 import { initializeFastify } from "./initialize-fastify.js";
 import type { FastifyInstance } from "./types.js";
 
 export type HttpModuleDef = ModuleDef<{
+	imports: [typeof ConfigModule];
 	providers: {
 		app: FastifyInstance;
 		fastifyService: FastifyService;
@@ -24,6 +26,7 @@ export type Deps = HttpModuleDef["deps"];
 
 export const HttpModule = createModule<HttpModuleDef>({
 	name: "HttpModule",
+	imports: [ConfigModule],
 	providers: {
 		app: {
 			eager: true,
@@ -31,7 +34,7 @@ export const HttpModule = createModule<HttpModuleDef>({
 		},
 		fastifyService: {
 			eager: true,
-			initAfter: ["app"],
+			initAfter: ["config", "app"],
 			useClass: FastifyService,
 		},
 	},

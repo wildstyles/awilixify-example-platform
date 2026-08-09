@@ -4,7 +4,10 @@ import fastifySwaggerUi from "@fastify/swagger-ui";
 import type { Deps } from "./http.module.js";
 
 export class FastifyService {
-	constructor(private readonly app: Deps["app"]) {}
+	constructor(
+		private readonly app: Deps["app"],
+		private readonly config: Deps["config"],
+	) {}
 
 	async init() {
 		await this.app.register(fastifySwagger, {
@@ -15,8 +18,8 @@ export class FastifyService {
 				},
 				servers: [
 					{
-						description: "Development server",
-						url: "http://localhost:3000",
+						description: `${this.config.get("deploymentEnvironment")} server`,
+						url: this.config.get("publicAppUrl"),
 					},
 				],
 			},
@@ -29,8 +32,8 @@ export class FastifyService {
 
 	async postInit() {
 		await this.app.listen({
-			host: "0.0.0.0",
-			port: 3000,
+			host: this.config.get("httpHost"),
+			port: this.config.get("httpPort"),
 		});
 	}
 

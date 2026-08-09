@@ -31,7 +31,7 @@ importers:
         version: link:../../packages/rabbitmq
       '@awilixify/devtools':
         specifier: ^0.2.0
-        version: 0.2.0(awilix@12.1.1)(awilixify@3.2.0(awilix@12.1.1))
+        version: 0.2.0(awilix@12.1.1)(awilixify@3.2.1(awilix@12.1.1))
       '@fastify/swagger':
         specifier: ^9.7.0
         version: 9.8.1
@@ -48,8 +48,11 @@ importers:
         specifier: ^12.0.5
         version: 12.1.1
       awilixify:
-        specifier: ^3.2.0
-        version: 3.2.0(awilix@12.1.1)
+        specifier: ^3.2.1
+        version: 3.2.1(awilix@12.1.1)
+      dotenv:
+        specifier: ^17.4.2
+        version: 17.4.2
       fastify:
         specifier: ^5.8.5
         version: 5.10.0
@@ -74,7 +77,7 @@ importers:
         version: link:../../packages/rabbitmq
       '@awilixify/devtools':
         specifier: ^0.2.0
-        version: 0.2.0(awilix@12.1.1)(awilixify@3.2.0(awilix@12.1.1))
+        version: 0.2.0(awilix@12.1.1)(awilixify@3.2.1(awilix@12.1.1))
       '@fastify/swagger':
         specifier: ^9.7.0
         version: 9.8.1
@@ -91,8 +94,11 @@ importers:
         specifier: ^12.0.5
         version: 12.1.1
       awilixify:
-        specifier: ^3.2.0
-        version: 3.2.0(awilix@12.1.1)
+        specifier: ^3.2.1
+        version: 3.2.1(awilix@12.1.1)
+      dotenv:
+        specifier: ^17.4.2
+        version: 17.4.2
       fastify:
         specifier: ^5.8.5
         version: 5.10.0
@@ -122,8 +128,8 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1
       awilixify:
-        specifier: ^3.2.0
-        version: 3.2.0(awilix@12.1.1)
+        specifier: ^3.2.1
+        version: 3.2.1(awilix@12.1.1)
 
 packages:
 
@@ -978,8 +984,8 @@ packages:
     resolution: {integrity: sha512-A93ak7Ypot8YlkfulCBL4GCkZozuwdfwOJs+4l8+svJYCfXKuokLxWe/usTiatN1dlPOdT5HO0MBpNNTzZSWug==}
     engines: {node: '>=16.3.0'}
 
-  awilixify@3.2.0:
-    resolution: {integrity: sha512-89fajaSHyd5wa82UHESBcDa9RvMGJ4n5qkozAVEjTg32SEhDlT8wTeWulDPrinGqfASX4hMov40IqI+49/SSHQ==}
+  awilixify@3.2.1:
+    resolution: {integrity: sha512-QDzdPEEYTa03SN11eQWnF3aJm4/x1W38ZnjQedwC/k82qmQekeWjhsaEdBg8JyqHvhil7mCeOVoD6cemiIWLng==}
     peerDependencies:
       awilix: '>=9.0.0'
 
@@ -1160,6 +1166,10 @@ packages:
 
   dot-case@3.0.4:
     resolution: {integrity: sha512-Kv5nKlh6yRrdrGvxeJ2e5y2eRUpkUosIW4A2AS38zwSz27zu7ufDwQPi5Jhs3XAlGNetl3bmnGhQsMtkKJnj3w==}
+
+  dotenv@17.4.2:
+    resolution: {integrity: sha512-nI4U3TottKAcAD9LLud4Cb7b2QztQMUEfHbvhTH09bqXTxnSie8WnjPALV/WMCrJZ6UV/qHJ6L03OqO3LcdYZw==}
+    engines: {node: '>=12'}
 
   dunder-proto@1.0.1:
     resolution: {integrity: sha512-KIN/nDJBQRcXw0MLVhZE9iQHmG68qAVIBg9CqmUYjmQIhgij9U5MFvrqkUL5FbtyyzZuOeOt0zdeRe4UY7ct+A==}
@@ -2664,14 +2674,14 @@ snapshots:
       - '@swc/wasm'
       - encoding
 
-  '@awilixify/devtools@0.2.0(awilix@12.1.1)(awilixify@3.2.0(awilix@12.1.1))':
+  '@awilixify/devtools@0.2.0(awilix@12.1.1)(awilixify@3.2.1(awilix@12.1.1))':
     dependencies:
       '@fastify/cors': 11.3.0
       '@fastify/swagger': 9.8.1
       '@fastify/swagger-ui': 6.1.0
       '@sinclair/typebox': 0.34.52
       awilix: 12.1.1
-      awilixify: 3.2.0(awilix@12.1.1)
+      awilixify: 3.2.1(awilix@12.1.1)
       fastify: 5.10.0
       ts-morph: 28.0.0
     transitivePeerDependencies:
@@ -3484,7 +3494,7 @@ snapshots:
     dependencies:
       fast-glob: 3.3.3
 
-  awilixify@3.2.0(awilix@12.1.1):
+  awilixify@3.2.1(awilix@12.1.1):
     dependencies:
       awilix: 12.1.1
 
@@ -3687,6 +3697,8 @@ snapshots:
     dependencies:
       no-case: 3.0.4
       tslib: 2.8.1
+
+  dotenv@17.4.2: {}
 
   dunder-proto@1.0.1:
     dependencies:
