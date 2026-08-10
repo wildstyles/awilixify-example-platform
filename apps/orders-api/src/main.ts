@@ -8,13 +8,20 @@ const shutdownTimeoutMs = Number.parseInt(
 	process.env.SHUTDOWN_TIMEOUT_MS ?? "10000",
 	10,
 );
+const traceOptions = {
+	traceExcludePaths: ["/health/live", "/health/ready"],
+};
 
 const app = DIContext.create(AppModule, {
 	globalModules: [
 		DevtoolsModule({
+			...traceOptions,
 			appUrl: process.env.PUBLIC_APP_URL ?? "http://127.0.0.1:3000",
 			host: process.env.DEVTOOLS_HOST ?? "0.0.0.0",
 			port: Number.parseInt(process.env.DEVTOOLS_PORT ?? "3221", 10),
+			// Git-based impact analysis needs a development source checkout.
+			providerImpact:
+				(process.env.NODE_ENV ?? "development") === "development",
 			serviceName: process.env.SERVICE_NAME ?? "orders",
 			traceHistoryFile:
 				process.env.DEVTOOLS_TRACE_HISTORY_FILE === "false"

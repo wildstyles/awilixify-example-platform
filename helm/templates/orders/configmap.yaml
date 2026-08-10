@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: orders-api
+  labels:
+    {{- include "awilixify-example-platform.labels" . | nindent 4 }}
+data:
+  NODE_ENV: production
+  DEPLOYMENT_ENVIRONMENT: {{ .Values.ordersApi.config.deploymentEnvironment | quote }}
+  SERVICE_NAME: {{ .Values.ordersApi.config.serviceName | quote }}
+  HTTP_PORT: {{ .Values.ordersApi.service.httpPort | quote }}
+  DEVTOOLS_PORT: {{ .Values.ordersApi.service.devtoolsPort | quote }}
+  PUBLIC_APP_URL: {{ .Values.ordersApi.config.publicAppUrl | quote }}
+  WAREHOUSE_API_URL: {{ .Values.ordersApi.config.warehouseApiUrl | quote }}
+  RABBITMQ_ADVERTISED_HOST: {{ printf "%s:%v" .Values.rabbitmq.host .Values.rabbitmq.service.amqpPort | quote }}

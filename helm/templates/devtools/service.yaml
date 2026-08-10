@@ -1,0 +1,18 @@
+{{- if .Values.devtoolsUi.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: devtools-ui
+  labels:
+    {{- include "awilixify-example-platform.labels" . | nindent 4 }}
+spec:
+  # Routes traffic to Pods carrying this label.
+  selector:
+    app: devtools-ui
+  # `port` is exposed by the Service; `targetPort` forwards to the named
+  # container port in the selected Pod.
+  ports:
+    - name: http
+      port: {{ .Values.devtoolsUi.service.port }}
+      targetPort: http
+{{- end }}

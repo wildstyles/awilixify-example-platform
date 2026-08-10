@@ -1,0 +1,64 @@
+# syntax=docker/dockerfile:1.7
+
+ARG NODE_VERSION=22.22.0-alpine3.23
+
+FROM node:${NODE_VERSION} AS base
+
+ENV PNPM_HOME=/pnpm
+ENV PATH=${PNPM_HOME}:${PATH}
+
+RUN corepack enable \
+	&& corepack prepare pnpm@10.34.4 --activate \
+	&& pnpm add --global turbo@2.10.6
+
+FROM base AS pruner
+
+ARG SERVICE
+
+WORKDIR /app
+COPY . .
+# Create a smaller workspace containing only this service and the internal
+# packages it depends on. The --docker output separates dependency manifests
+# from source files so Docker can cache dependency installation.
+RUN pnpm exec turbo prune "@awilixify-example-platform/${SERVICE}" --docker
+
+FROM base AS dependencies
+
+WORKDIR /app
+COPY --from=pruner /app/out/json/ .
+COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
+COPY --from=pruner /app/out/pnpm-workspace.yaml ./pnpm-workspace.yaml
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+	pnpm install --frozen-lockfile
+
+FROM dependencies AS builder
+
+ARG SERVICE
+
+COPY --from=pruner /app/out/full/ .
+RUN pnpm exec turbo run build --filter="@awilixify-example-platform/${SERVICE}"
+# Create a portable production directory for this service. Unlike `pnpm prune`,
+# deploy understands workspace packages and includes their runtime dependencies.
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+	pnpm --filter="@awilixify-example-platform/${SERVICE}" \
+	--prod --no-optional deploy --legacy /app/deploy
+
+FROM node:${NODE_VERSION} AS runner
+
+ARG SERVICE
+
+LABEL org.opencontainers.image.source="https://github.com/wildstyles/awilixify-example-platform"
+
+ENV NODE_ENV=production
+
+WORKDIR /app
+# The service runs as the non-root node user below. Give it ownership of the
+# deployed runtime files so it can read them and write DevTools trace history without
+# granting the container root privileges.
+COPY --chown=node:node --from=builder /app/deploy .
+
+# Running as the built-in node user limits the impact of an application
+# compromise by preventing the process from operating as root.
+USER node
+
+CMD ["node", "--enable-source-maps", "dist/main.js"]

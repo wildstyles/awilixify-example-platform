@@ -1,0 +1,64 @@
+{{- if .Values.rabbitmq.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rabbitmq
+  # Labels on the Deployment object itself; useful for filtering and ownership.
+  labels:
+    {{- include "awilixify-example-platform.labels" . | nindent 4 }}
+    app: rabbitmq
+spec:
+  replicas: 1
+  # Selects the Pods managed by this Deployment. Must match the Pod label below.
+  selector:
+    matchLabels:
+      app: rabbitmq
+  template:
+    metadata:
+      # Applied to every created Pod and used by the Deployment and Service.
+      labels:
+        app: rabbitmq
+    spec:
+      containers:
+        - name: rabbitmq
+          image: {{ printf "%s:%s" .Values.rabbitmq.image.repository .Values.rabbitmq.image.tag | quote }}
+          imagePullPolicy: {{ .Values.rabbitmq.image.pullPolicy }}
+          env:
+            - name: RABBITMQ_DEFAULT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "awilixify-example-platform.rabbitmqSecretName" . }}
+                  key: username
+            - name: RABBITMQ_DEFAULT_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "awilixify-example-platform.rabbitmqSecretName" . }}
+                  key: password
+          ports:
+            - name: amqp
+              containerPort: {{ .Values.rabbitmq.service.amqpPort }}
+            - name: management
+              containerPort: {{ .Values.rabbitmq.service.managementPort }}
+          # RabbitMQ is ready to accept clients when its AMQP listener opens.
+          # TCP probes avoid running Erlang diagnostic commands that read or
+          # create the Erlang cookie while the broker is still initializing.
+          startupProbe:
+            tcpSocket:
+              port: amqp
+            periodSeconds: 2
+            failureThreshold: 30
+          # Readiness controls whether the Service may send traffic to this Pod.
+          readinessProbe:
+            tcpSocket:
+              port: amqp
+            periodSeconds: 5
+            failureThreshold: 3
+          # Liveness restarts RabbitMQ only when a running broker stops responding.
+          livenessProbe:
+            tcpSocket:
+              port: amqp
+            periodSeconds: 10
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.rabbitmq.resources | nindent 12 }}
+{{- end }}

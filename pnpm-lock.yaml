@@ -30,8 +30,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/rabbitmq
       '@awilixify/devtools':
-        specifier: ^0.2.0
-        version: 0.2.0(awilix@12.1.1)(awilixify@3.2.1(awilix@12.1.1))
+        specifier: ^0.2.3
+        version: 0.2.3(awilix@12.1.1)(awilixify@3.2.1(awilix@12.1.1))
       '@fastify/swagger':
         specifier: ^9.7.0
         version: 9.8.1
@@ -76,8 +76,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/rabbitmq
       '@awilixify/devtools':
-        specifier: ^0.2.0
-        version: 0.2.0(awilix@12.1.1)(awilixify@3.2.1(awilix@12.1.1))
+        specifier: ^0.2.3
+        version: 0.2.3(awilix@12.1.1)(awilixify@3.2.1(awilix@12.1.1))
       '@fastify/swagger':
         specifier: ^9.7.0
         version: 9.8.1
@@ -218,8 +218,8 @@ packages:
     engines: {node: '>=20'}
     hasBin: true
 
-  '@awilixify/devtools@0.2.0':
-    resolution: {integrity: sha512-67sgmUw0NtKFYPmgmsIqVJfcDZ8kQs0Fs0Opev6WkfIefGshIQHBrv48psPx9ztry+j6Nv3FSLEDbgtKsWrDNQ==}
+  '@awilixify/devtools@0.2.3':
+    resolution: {integrity: sha512-DdZWMRzx54P5CVRLJtZaWJHNBINUoo0MisEXTUsum4xxiGOGixb33IlpiFrm6aqu7kTh4FoopxVN9TjCnWeGCw==}
     peerDependencies:
       awilix: '>=9.0.0'
       awilixify: '>=3.1.3'
@@ -732,6 +732,10 @@ packages:
 
   '@stoplight/json@3.21.0':
     resolution: {integrity: sha512-5O0apqJ/t4sIevXCO3SBN9AHCEKKR/Zb4gaj7wYe5863jme9g02Q0n/GhM7ZCALkL+vGPTe4ZzTETP8TFtsw3g==}
+    engines: {node: '>=8.3.0'}
+
+  '@stoplight/json@3.21.7':
+    resolution: {integrity: sha512-xcJXgKFqv/uCEgtGlPxy3tPA+4I+ZI4vAuMJ885+ThkTHFVkC+0Fm58lA9NlsyjnkpxFh4YiQWpH+KefHdbA0A==}
     engines: {node: '>=8.3.0'}
 
   '@stoplight/ordered-object-literal@1.0.5':
@@ -2563,7 +2567,7 @@ snapshots:
     dependencies:
       '@asyncapi/specs': 5.1.0
       '@openapi-contrib/openapi-schema-to-json-schema': 3.2.0
-      '@stoplight/json': 3.21.0
+      '@stoplight/json': 3.21.7
       '@stoplight/json-ref-readers': 1.2.2
       '@stoplight/json-ref-resolver': 3.1.6
       '@stoplight/spectral-core': 1.23.1
@@ -2674,7 +2678,7 @@ snapshots:
       - '@swc/wasm'
       - encoding
 
-  '@awilixify/devtools@0.2.0(awilix@12.1.1)(awilixify@3.2.1(awilix@12.1.1))':
+  '@awilixify/devtools@0.2.3(awilix@12.1.1)(awilixify@3.2.1(awilix@12.1.1))':
     dependencies:
       '@fastify/cors': 11.3.0
       '@fastify/swagger': 9.8.1
@@ -3200,6 +3204,15 @@ snapshots:
       urijs: 1.19.11
 
   '@stoplight/json@3.21.0':
+    dependencies:
+      '@stoplight/ordered-object-literal': 1.0.5
+      '@stoplight/path': 1.3.2
+      '@stoplight/types': 13.20.0
+      jsonc-parser: 2.2.1
+      lodash: 4.18.1
+      safe-stable-stringify: 1.1.1
+
+  '@stoplight/json@3.21.7':
     dependencies:
       '@stoplight/ordered-object-literal': 1.0.5
       '@stoplight/path': 1.3.2

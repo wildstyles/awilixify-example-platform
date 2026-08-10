@@ -1,4 +1,5 @@
 .git
+**/.git
 .github
 .turbo
 .pnpm-store

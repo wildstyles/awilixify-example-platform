@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orders-api
+  # Labels on the Deployment object itself; useful for filtering and ownership.
+  labels:
+    {{- include "awilixify-example-platform.labels" . | nindent 4 }}
+    app: orders-api
+spec:
+  replicas: {{ .Values.ordersApi.replicas }}
+  # Selects the Pods managed by this Deployment. Must match the Pod label below.
+  selector:
+    matchLabels:
+      app: orders-api
+  template:
+    metadata:
+      # Applied to every created Pod and used by the Deployment and Service.
+      labels:
+        app: orders-api
+    spec:
+      securityContext:
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: orders-api
+          image: {{ printf "%s:%s" .Values.ordersApi.image.repository (required "global.image.tag is required" .Values.global.image.tag) | quote }}
+          imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1000
+          envFrom:
+            # Non-sensitive runtime configuration is loaded from the ConfigMap.
+            - configMapRef:
+                name: orders-api
+          env:
+            # The broker URL contains credentials, so map only its `url` Secret
+            # key to the environment variable expected by the application.
+            - name: RABBITMQ_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "awilixify-example-platform.rabbitmqSecretName" . }}
+                  key: url
+          ports:
+            # Application HTTP API. An Ingress may expose this port publicly.
+            - name: http
+              containerPort: {{ .Values.ordersApi.service.httpPort }}
+            # Embedded DevTools API. Keep it private; the DevTools UI proxies it.
+            - name: devtools
+              containerPort: {{ .Values.ordersApi.service.devtoolsPort }}
+          startupProbe:
+            httpGet:
+              path: /health/live
+              port: http
+            failureThreshold: 30
+            periodSeconds: 2
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: http
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: http
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.ordersApi.resources | nindent 12 }}
+          volumeMounts:
+            # Trace history is runtime state, so keep it outside the read-only
+            # image filesystem. emptyDir is intentionally ephemeral for now.
+            - name: traces
+              mountPath: /app/apps/orders-api/.awilixify-devtools
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: traces
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}

@@ -2,6 +2,7 @@
 	"name": "@awilixify-example-platform/rabbitmq",
 	"private": true,
 	"type": "module",
+	"files": ["dist"],
 	"exports": {
 		".": {
 			"types": "./src/index.ts",

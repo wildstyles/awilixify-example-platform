@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: warehouse-api
+  labels:
+    {{- include "awilixify-example-platform.labels" . | nindent 4 }}
+data:
+  NODE_ENV: production
+  DEPLOYMENT_ENVIRONMENT: {{ .Values.warehouseApi.config.deploymentEnvironment | quote }}
+  SERVICE_NAME: {{ .Values.warehouseApi.config.serviceName | quote }}
+  HTTP_PORT: {{ .Values.warehouseApi.service.httpPort | quote }}
+  DEVTOOLS_PORT: {{ .Values.warehouseApi.service.devtoolsPort | quote }}
+  PUBLIC_APP_URL: {{ .Values.warehouseApi.config.publicAppUrl | quote }}
+  RABBITMQ_ADVERTISED_HOST: {{ printf "%s:%v" .Values.rabbitmq.host .Values.rabbitmq.service.amqpPort | quote }}

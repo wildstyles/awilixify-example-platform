@@ -1,0 +1,39 @@
+{{- if .Values.devtoolsUi.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: devtools-ui
+  # Labels on the Deployment object itself; useful for filtering and ownership.
+  labels:
+    {{- include "awilixify-example-platform.labels" . | nindent 4 }}
+    app: devtools-ui
+spec:
+  replicas: {{ .Values.devtoolsUi.replicas }}
+  # Selects the Pods managed by this Deployment. Must match the Pod label below.
+  selector:
+    matchLabels:
+      app: devtools-ui
+  template:
+    metadata:
+      # Applied to every created Pod and used by the Deployment and Service.
+      labels:
+        app: devtools-ui
+    spec:
+      containers:
+        - name: devtools-ui
+          image: {{ printf "%s:%s" .Values.devtoolsUi.image.repository .Values.devtoolsUi.image.tag | quote }}
+          imagePullPolicy: {{ .Values.devtoolsUi.image.pullPolicy }}
+          env:
+            # Nginx proxies the browser to these private in-cluster endpoints.
+            - name: DEVTOOLS_TARGETS
+              value: |
+                - serviceName: orders
+                  url: http://orders-api:{{ .Values.ordersApi.service.devtoolsPort }}
+                - serviceName: warehouse
+                  url: http://warehouse-api:{{ .Values.warehouseApi.service.devtoolsPort }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.devtoolsUi.service.port }}
+          resources:
+            {{- toYaml .Values.devtoolsUi.resources | nindent 12 }}
+{{- end }}

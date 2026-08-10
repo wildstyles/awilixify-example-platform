@@ -1,0 +1,86 @@
+global:
+  image:
+    # The Makefile supplies a tag for every install. An empty default prevents
+    # accidentally deploying a mutable or implicit latest tag.
+    tag: ""
+    pullPolicy: IfNotPresent
+
+ordersApi:
+  replicas: 1
+  image:
+    repository: awilixify-example-platform/orders-api
+  service:
+    httpPort: 3000
+    devtoolsPort: 3221
+  config:
+    deploymentEnvironment: kubernetes
+    publicAppUrl: http://localhost:3000
+    serviceName: orders
+    warehouseApiUrl: http://warehouse-api:3001
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+warehouseApi:
+  replicas: 1
+  image:
+    repository: awilixify-example-platform/warehouse-api
+  service:
+    httpPort: 3001
+    devtoolsPort: 3223
+  config:
+    deploymentEnvironment: kubernetes
+    publicAppUrl: http://localhost:3001
+    serviceName: warehouse
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+devtoolsUi:
+  enabled: true
+  replicas: 1
+  image:
+    repository: ghcr.io/awilixify/awilixify-devtools-ui
+    tag: 0.1.1
+    pullPolicy: IfNotPresent
+  service:
+    port: 3222
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+
+rabbitmq:
+  # Remote environments should keep this disabled and provide an existing
+  # Secret containing a `url` key for the managed broker.
+  enabled: false
+  host: rabbitmq
+  image:
+    repository: rabbitmq
+    tag: 4-management
+    pullPolicy: IfNotPresent
+  auth:
+    username: ""
+    password: ""
+  existingSecret: ""
+  service:
+    amqpPort: 5672
+    managementPort: 15672
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 768Mi

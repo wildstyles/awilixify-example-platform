@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: warehouse-api
+  labels:
+    {{- include "awilixify-example-platform.labels" . | nindent 4 }}
+spec:
+  # Routes traffic to Pods carrying this label.
+  selector:
+    app: warehouse-api
+  # `port` is exposed by the Service; `targetPort` forwards to the named
+  # container port in the selected Pod.
+  ports:
+    # Application traffic; a future Ingress can route to this named port.
+    - name: http
+      port: {{ .Values.warehouseApi.service.httpPort }}
+      targetPort: http
+    # Cluster-internal DevTools traffic used by the DevTools UI proxy.
+    - name: devtools
+      port: {{ .Values.warehouseApi.service.devtoolsPort }}
+      targetPort: devtools

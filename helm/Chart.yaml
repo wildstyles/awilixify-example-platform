@@ -1,0 +1,5 @@
+apiVersion: v2
+name: awilixify-example-platform
+description: Orders, Warehouse, and DevTools services for the Awilixify example platform
+type: application
+version: 0.1.0

@@ -1,0 +1,16 @@
+ordersApi:
+  config:
+    deploymentEnvironment: local-kubernetes
+
+warehouseApi:
+  config:
+    deploymentEnvironment: local-kubernetes
+
+rabbitmq:
+  # The local cluster is self-contained. These credentials are intentionally
+  # non-production and must never be reused for a remote environment.
+  enabled: true
+  host: rabbitmq
+  auth:
+    username: awilixify
+    password: awilixify
