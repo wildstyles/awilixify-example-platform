@@ -1,0 +1,120 @@
+name: Publish images
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_bump:
+        description: Version bump
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+permissions:
+  contents: write
+  id-token: write
+
+concurrency:
+  group: publish-images
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: eu-west-1
+  ECR_NAMESPACE: awilixify-example-platform
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Check repository configuration
+        shell: bash
+        run: |
+          if [[ -z "${{ vars.AWS_ACCOUNT_ID }}" ]]; then
+            echo "Set the AWS_ACCOUNT_ID repository variable before running this workflow." >&2
+            exit 1
+          fi
+
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Select release version
+        id: release
+        shell: bash
+        run: |
+          npm version "${{ inputs.version_bump }}" --no-git-tag-version
+          version="$(node --print "require('./package.json').version")"
+          if git rev-parse --verify --quiet "refs/tags/v${version}"; then
+            echo "Git tag v${version} already exists." >&2
+            exit 1
+          fi
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6.2.3
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/awilixify-example-platform-github-image-publisher
+
+      - name: Confirm version is not already in ECR
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        shell: bash
+        run: |
+          for service in orders-api warehouse-api; do
+            if aws ecr describe-images \
+              --repository-name "${ECR_NAMESPACE}/${service}" \
+              --image-ids "imageTag=${VERSION}" >/dev/null 2>&1; then
+              echo "${service}:${VERSION} already exists and ECR tags are immutable." >&2
+              exit 1
+            fi
+          done
+
+      - name: Log in to Amazon ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build and push Orders API
+        uses: docker/build-push-action@v7.2.0
+        with:
+          context: .
+          file: docker/Dockerfile.service
+          build-args: SERVICE=orders-api
+          push: true
+          tags: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_NAMESPACE }}/orders-api:${{ steps.release.outputs.version }}
+          cache-from: type=gha,scope=orders-api
+          cache-to: type=gha,mode=max,scope=orders-api
+
+      - name: Build and push Warehouse API
+        uses: docker/build-push-action@v7.2.0
+        with:
+          context: .
+          file: docker/Dockerfile.service
+          build-args: SERVICE=warehouse-api
+          push: true
+          tags: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_NAMESPACE }}/warehouse-api:${{ steps.release.outputs.version }}
+          cache-from: type=gha,scope=warehouse-api
+          cache-to: type=gha,mode=max,scope=warehouse-api
+
+      # Commit only after both immutable images were pushed successfully, so a
+      # Git release never points at a partial image release.
+      - name: Commit and tag release
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json
+          git commit -m "chore: release images v${VERSION}"
+          git tag "v${VERSION}"
+          git push origin HEAD:main
+          git push origin "v${VERSION}"
