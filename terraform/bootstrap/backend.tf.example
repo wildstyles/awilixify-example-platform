@@ -1,0 +1,12 @@
+# Copy this file to backend.tf only after the first local apply creates the
+# bucket, then run terraform init -migrate-state with bucket and region values.
+# A terraform block may also configure where Terraform stores its own state.
+terraform {
+  # A backend is state storage, not an AWS resource managed by this stack. The
+  # bucket and region are supplied to terraform init after the bucket exists.
+  backend "s3" {
+    key          = "bootstrap/terraform.tfstate"
+    encrypt      = true
+    use_lockfile = true
+  }
+}
