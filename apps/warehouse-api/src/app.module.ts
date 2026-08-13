@@ -12,7 +12,7 @@ const MessagingDocsModule = RabbitMqAsyncApiDocsModule({
 		"Commands and events produced or consumed by the Warehouse service.",
 	server: {
 		description: `${process.env.DEPLOYMENT_ENVIRONMENT ?? "local"} RabbitMQ broker`,
-		host: process.env.RABBITMQ_ADVERTISED_HOST ?? "localhost:5673",
+		host: `${process.env.RABBITMQ_HOST ?? "localhost"}:${process.env.RABBITMQ_PORT ?? "5673"}`,
 	},
 	title: "Warehouse Messaging API",
 	version: process.env.IMAGE_VERSION ?? "development",

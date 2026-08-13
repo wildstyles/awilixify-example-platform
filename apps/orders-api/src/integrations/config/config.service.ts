@@ -17,9 +17,6 @@ function isUrlWithProtocol(
 FormatRegistry.Set("http-url", (value) =>
 	isUrlWithProtocol(value, ["http:", "https:"]),
 );
-FormatRegistry.Set("amqp-url", (value) =>
-	isUrlWithProtocol(value, ["amqp:", "amqps:"]),
-);
 
 const DevtoolsTraceHistoryFileSchema = Type.Transform(
 	Type.String({
@@ -55,14 +52,14 @@ const RawEnvConfigSchema = Type.Object({
 		default: "http://127.0.0.1:3000",
 		format: "http-url",
 	}),
-	RABBITMQ_ADVERTISED_HOST: Type.String({
-		default: "localhost:5673",
-		minLength: 1,
+	RABBITMQ_HOST: Type.String({ default: "localhost", minLength: 1 }),
+	RABBITMQ_PASSWORD: Type.String({ default: "guest", minLength: 1 }),
+	RABBITMQ_PORT: Type.Integer({
+		default: 5673,
+		maximum: 65_535,
+		minimum: 1,
 	}),
-	RABBITMQ_URL: Type.String({
-		default: "amqp://guest:guest@localhost:5673",
-		format: "amqp-url",
-	}),
+	RABBITMQ_USERNAME: Type.String({ default: "guest", minLength: 1 }),
 	SERVICE_NAME: Type.String({
 		default: "orders",
 		pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$",
@@ -91,8 +88,10 @@ export type AppConfig = {
 	imageVersion: string;
 	nodeEnvironment: RawEnvConfig["NODE_ENV"];
 	publicAppUrl: string;
-	rabbitMqAdvertisedHost: string;
-	rabbitMqUrl: string;
+	rabbitMqHost: string;
+	rabbitMqPassword: string;
+	rabbitMqPort: number;
+	rabbitMqUsername: string;
 	serviceName: string;
 	shutdownTimeoutMs: number;
 	warehouseApiUrl: string;
@@ -145,8 +144,10 @@ export class ConfigService {
 			imageVersion: raw.IMAGE_VERSION,
 			nodeEnvironment: raw.NODE_ENV,
 			publicAppUrl: raw.PUBLIC_APP_URL,
-			rabbitMqAdvertisedHost: raw.RABBITMQ_ADVERTISED_HOST,
-			rabbitMqUrl: raw.RABBITMQ_URL,
+			rabbitMqHost: raw.RABBITMQ_HOST,
+			rabbitMqPassword: raw.RABBITMQ_PASSWORD,
+			rabbitMqPort: raw.RABBITMQ_PORT,
+			rabbitMqUsername: raw.RABBITMQ_USERNAME,
 			serviceName: raw.SERVICE_NAME,
 			shutdownTimeoutMs: raw.SHUTDOWN_TIMEOUT_MS,
 			warehouseApiUrl: raw.WAREHOUSE_API_URL,

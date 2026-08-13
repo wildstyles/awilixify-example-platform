@@ -72,8 +72,8 @@ source repositories to be checked out together.
 - Orders serves HTTP on `3000`; Warehouse serves HTTP on `3001`.
 - Their embedded DevTools APIs listen on `3221` and `3223`.
 - The separate DevTools UI listens on `3222` and proxies those APIs.
-- Both services use `RABBITMQ_URL`. Local development currently uses RabbitMQ
-  on host port `5673`; Kubernetes must use the RabbitMQ Service on port `5672`.
+- Both services use separate RabbitMQ host, port, username, and password values.
+  Local development uses host port `5673`; Kubernetes uses the Service on `5672`.
 - Orders uses `WAREHOUSE_API_URL` to call Warehouse.
 - Orders, inventory, and DevTools traces are process-local. Traces can be
   written to `.awilixify-devtools/traces.json`, but the applications have no
@@ -177,8 +177,10 @@ PUBLIC_APP_URL
 DEVTOOLS_HOST
 DEVTOOLS_PORT
 DEVTOOLS_TRACE_HISTORY_FILE
-RABBITMQ_URL
-RABBITMQ_ADVERTISED_HOST
+RABBITMQ_HOST
+RABBITMQ_PORT
+RABBITMQ_USERNAME
+RABBITMQ_PASSWORD
 WAREHOUSE_API_URL
 COMMIT_SHA
 IMAGE_VERSION
@@ -270,7 +272,8 @@ Configure internal addresses through Kubernetes DNS:
 
 ```text
 WAREHOUSE_API_URL=http://warehouse-api:3001
-RABBITMQ_URL=amqp://<user>:<password>@rabbitmq:5672
+RABBITMQ_HOST=rabbitmq
+RABBITMQ_PORT=5672
 orders DevTools API=http://orders-api:3221
 warehouse DevTools API=http://warehouse-api:3223
 ```
@@ -514,10 +517,10 @@ and version upgrades. The team still owns topology, users, permissions, client
 reconnection, publisher confirms, queue policies, capacity, alarms, and
 application failure handling.
 
-Keep broker selection outside application code. Local values point
-`RABBITMQ_URL` at the Kubernetes Service; AWS values obtain the private Amazon
-MQ endpoint and credentials from a Secret. Never expose AMQP or the management
-UI publicly.
+Keep broker selection outside application code. Local values supply the
+Kubernetes Service host and port; AWS values supply the private Amazon MQ
+endpoint. Credentials come from a Secret in both cases. Never expose AMQP or the
+management UI publicly.
 
 ### Exit criteria
 

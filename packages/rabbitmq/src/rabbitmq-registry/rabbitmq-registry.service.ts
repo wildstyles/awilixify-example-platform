@@ -29,9 +29,13 @@ export class RabbitMqRegistry {
 	private readonly registeredQueues = new Set<string>();
 
 	constructor() {
-		const url = process.env.RABBITMQ_URL ?? "amqp://guest:guest@localhost:5673";
+		const url = new URL(
+			`amqp://${process.env.RABBITMQ_HOST ?? "localhost"}:${process.env.RABBITMQ_PORT ?? "5673"}`,
+		);
+		url.username = process.env.RABBITMQ_USERNAME ?? "guest";
+		url.password = process.env.RABBITMQ_PASSWORD ?? "guest";
 
-		this.connection = amqp.connect([url]);
+		this.connection = amqp.connect([url.toString()]);
 		this.channel = this.connection.createChannel({
 			name: "awilixify-example-platform",
 		});

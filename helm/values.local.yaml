@@ -11,6 +11,11 @@ rabbitmq:
   # non-production and must never be reused for a remote environment.
   enabled: true
   host: rabbitmq
+  # Clear the AWS Secret name so the chart creates a local demo Secret instead.
+  existingSecret: ""
   auth:
     username: awilixify
     password: awilixify
+
+secrets:
+  enabled: false

@@ -38,13 +38,18 @@ spec:
             - configMapRef:
                 name: warehouse-api
           env:
-            # The broker URL contains credentials, so map only its `url` Secret
-            # key to the environment variable expected by the application.
-            - name: RABBITMQ_URL
+            # Only credentials come from the Secret; host and port are ordinary
+            # configuration loaded from the ConfigMap above.
+            - name: RABBITMQ_USERNAME
               valueFrom:
                 secretKeyRef:
                   name: {{ include "awilixify-example-platform.rabbitmqSecretName" . }}
-                  key: url
+                  key: username
+            - name: RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "awilixify-example-platform.rabbitmqSecretName" . }}
+                  key: password
           ports:
             # Application HTTP API. An Ingress may expose this port publicly.
             - name: http

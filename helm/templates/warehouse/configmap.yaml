@@ -11,4 +11,7 @@ data:
   HTTP_PORT: {{ .Values.warehouseApi.service.httpPort | quote }}
   DEVTOOLS_PORT: {{ .Values.warehouseApi.service.devtoolsPort | quote }}
   PUBLIC_APP_URL: {{ .Values.warehouseApi.config.publicAppUrl | quote }}
-  RABBITMQ_ADVERTISED_HOST: {{ printf "%s:%v" .Values.rabbitmq.host .Values.rabbitmq.service.amqpPort | quote }}
+  # Host and port are ordinary cluster configuration; credentials come from
+  # the RabbitMQ Secret in the Deployment.
+  RABBITMQ_HOST: {{ .Values.rabbitmq.host | quote }}
+  RABBITMQ_PORT: {{ .Values.rabbitmq.service.amqpPort | quote }}

@@ -1,0 +1,103 @@
+name: Deploy to EKS
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: Existing immutable ECR image tag, for example 0.1.1
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: deploy-eks
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: eu-west-1
+  CLUSTER_NAME: awilixify-example-platform
+  NAMESPACE: awilixify-example-platform
+  ECR_NAMESPACE: awilixify-example-platform
+  EXTERNAL_SECRETS_VERSION: 2.8.0
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Check repository configuration
+        shell: bash
+        run: |
+          if [[ -z "${{ vars.AWS_ACCOUNT_ID }}" ]]; then
+            echo "Set the AWS_ACCOUNT_ID repository variable." >&2
+            exit 1
+          fi
+
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6.2.3
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/awilixify-example-platform-github-deployer
+
+      - name: Confirm both images exist
+        env:
+          IMAGE_TAG: ${{ inputs.image_tag }}
+        shell: bash
+        run: |
+          for service in orders-api warehouse-api; do
+            aws ecr describe-images \
+              --repository-name "${ECR_NAMESPACE}/${service}" \
+              --image-ids "imageTag=${IMAGE_TAG}" >/dev/null
+          done
+
+      - name: Connect kubectl to EKS
+        run: aws eks update-kubeconfig --region "${AWS_REGION}" --name "${CLUSTER_NAME}"
+
+      # This published Helm chart installs External Secrets Operator as a
+      # separate controller running in the cluster. It watches SecretStore and
+      # ExternalSecret objects created by our application chart, reads AWS
+      # Secrets Manager using Pod Identity, and creates/updates normal
+      # Kubernetes Secrets consumed by Pods.
+      #
+      # `upgrade --install` is idempotent: the first deployment installs the
+      # tool; later deployments check the existing release and change it only
+      # when its pinned version or configuration changes.
+      - name: Install External Secrets Operator
+        shell: bash
+        run: |
+          helm repo add external-secrets https://charts.external-secrets.io
+          helm repo update external-secrets
+          helm upgrade --install external-secrets external-secrets/external-secrets \
+            --namespace external-secrets \
+            --create-namespace \
+            --version "${EXTERNAL_SECRETS_VERSION}" \
+            --set serviceAccount.name=external-secrets \
+            --wait \
+            --timeout 5m
+
+      - name: Deploy application chart
+        env:
+          IMAGE_TAG: ${{ inputs.image_tag }}
+          ECR_REGISTRY: ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.eu-west-1.amazonaws.com
+        shell: bash
+        run: |
+          helm upgrade --install awilixify-example-platform ./helm \
+            --namespace "${NAMESPACE}" \
+            --create-namespace \
+            --set-string global.image.tag="${IMAGE_TAG}" \
+            --set-string ordersApi.image.repository="${ECR_REGISTRY}/${ECR_NAMESPACE}/orders-api" \
+            --set-string warehouseApi.image.repository="${ECR_REGISTRY}/${ECR_NAMESPACE}/warehouse-api" \
+            --wait \
+            --timeout 10m
+
+      - name: Show deployment status
+        run: |
+          kubectl get externalsecret,pods,services --namespace "${NAMESPACE}"
+          kubectl get nodes

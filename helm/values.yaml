@@ -13,7 +13,7 @@ ordersApi:
     httpPort: 3000
     devtoolsPort: 3221
   config:
-    deploymentEnvironment: kubernetes
+    deploymentEnvironment: aws-eks
     publicAppUrl: http://localhost:3000
     serviceName: orders
     warehouseApiUrl: http://warehouse-api:3001
@@ -33,7 +33,7 @@ warehouseApi:
     httpPort: 3001
     devtoolsPort: 3223
   config:
-    deploymentEnvironment: kubernetes
+    deploymentEnvironment: aws-eks
     publicAppUrl: http://localhost:3001
     serviceName: warehouse
   resources:
@@ -62,9 +62,9 @@ devtoolsUi:
       memory: 256Mi
 
 rabbitmq:
-  # Remote environments should keep this disabled and provide an existing
-  # Secret containing a `url` key for the managed broker.
-  enabled: false
+  # EKS runs RabbitMQ in-cluster for this learning project, but credentials are
+  # synchronized from AWS Secrets Manager rather than stored in Helm values.
+  enabled: true
   host: rabbitmq
   image:
     repository: rabbitmq
@@ -73,7 +73,9 @@ rabbitmq:
   auth:
     username: ""
     password: ""
-  existingSecret: ""
+  # Name of the Kubernetes Secret consumed by RabbitMQ and both APIs. In EKS,
+  # ExternalSecret creates this target Secret from the AWS value.
+  existingSecret: rabbitmq-credentials
   service:
     amqpPort: 5672
     managementPort: 15672
@@ -84,3 +86,12 @@ rabbitmq:
     limits:
       cpu: 500m
       memory: 768Mi
+
+secrets:
+  # Enables synchronization from AWS Secrets Manager. values.local.yaml
+  # disables it because Minikube has no AWS Pod Identity.
+  enabled: true
+  region: eu-west-1
+  refreshInterval: 1m
+  rabbitmq:
+    remoteName: awilixify-example-platform/rabbitmq
