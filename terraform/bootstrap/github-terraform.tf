@@ -61,7 +61,6 @@ data "aws_iam_policy_document" "github_terraform" {
       "iam:DeleteRole",
       "iam:DeleteRolePolicy",
       "iam:DetachRolePolicy",
-      "iam:GetRole",
       "iam:GetRolePolicy",
       "iam:ListAttachedRolePolicies",
       "iam:ListRolePolicies",
@@ -73,20 +72,15 @@ data "aws_iam_policy_document" "github_terraform" {
     resources = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${local.project}-*"]
   }
 
-  # AWS creates service-linked roles when an account uses EKS for the first time.
+  # AWS creates service-linked roles when an account uses EKS for the first
+  # time. EKS checks GetRole before that role exists, so this read-only action
+  # cannot be restricted to the future service-linked role ARN.
   statement {
-    actions   = ["iam:CreateServiceLinkedRole"]
-    resources = ["*"]
-  }
-
-  # Before creating a managed node group, EKS checks whether its AWS-managed
-  # service-linked role already exists. This role is outside our project-name
-  # prefix, so it needs its own narrowly scoped read permission.
-  statement {
-    actions = ["iam:GetRole"]
-    resources = [
-      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/aws-service-role/eks-nodegroup.amazonaws.com/AWSServiceRoleForAmazonEKSNodegroup",
+    actions = [
+      "iam:CreateServiceLinkedRole",
+      "iam:GetRole",
     ]
+    resources = ["*"]
   }
 
   # The persistent platform stack owns only the RabbitMQ secret container.
