@@ -79,6 +79,16 @@ data "aws_iam_policy_document" "github_terraform" {
     resources = ["*"]
   }
 
+  # Before creating a managed node group, EKS checks whether its AWS-managed
+  # service-linked role already exists. This role is outside our project-name
+  # prefix, so it needs its own narrowly scoped read permission.
+  statement {
+    actions = ["iam:GetRole"]
+    resources = [
+      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/aws-service-role/eks-nodegroup.amazonaws.com/AWSServiceRoleForAmazonEKSNodegroup",
+    ]
+  }
+
   # The persistent platform stack owns only the RabbitMQ secret container.
   # Its sensitive value is entered manually and never passes through Terraform.
   statement {
