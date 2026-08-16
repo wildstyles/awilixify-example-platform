@@ -28,6 +28,101 @@ Common ways to expose an application are:
 Only intended HTTP entry points should be routed externally. RabbitMQ and the
 service DevTools ports should normally remain cluster-internal.
 
+## Domain registration and DNS
+
+Registering a domain and hosting its DNS are separate jobs:
+
+- A **registry** operates a top-level domain such as `.com` or `.dev`.
+- A **registrar**, such as Route 53, Cloudflare, or Namecheap, registers a
+  chosen domain with that registry. Registration normally lasts at least one
+  year and must be renewed; it is not a permanent purchase.
+- A **DNS provider** hosts the domain's records and answers requests asking
+  where its names should go.
+- **Name servers** tell the public DNS system which DNS provider is authoritative
+  for the domain.
+
+The registrar and DNS provider may be the same company or different companies.
+For example, a domain can be registered at Namecheap while its name servers and
+DNS records are managed by Route 53. Registering through Route 53 can do both:
+AWS registers the name, creates a hosted zone, assigns name servers, and lets us
+manage its DNS records.
+
+```text
+Register awilixify.dev
+        ↓
+.dev registry records its authoritative Route 53 name servers
+        ↓
+Route 53 record: api.awilixify.dev → AWS load balancer
+        ↓
+Browser resolves the name and connects to the load balancer
+```
+
+One registered domain can have many subdomains without registering or paying
+for each one separately. Records in the `awilixify.dev` hosted zone could route
+`api.awilixify.dev`, `devtools.awilixify.dev`, and `staging.awilixify.dev` to the
+same or different destinations. A wildcard record or certificate such as
+`*.awilixify.dev` can cover many one-level subdomains when that is useful.
+
+The `.dev` top-level domain is HSTS-preloaded, so browsers require HTTPS from
+the first visit. That is useful for learning real HTTPS, but the ACM certificate
+and HTTPS listener must be ready before browser testing.
+
+### How do HTTP and HTTPS relate to a domain?
+
+A domain is registered only once; there are no separate HTTP and HTTPS versions
+of it. DNS resolves both URLs to the same load balancer. The URL scheme selects
+the protocol and its default port:
+
+```text
+http://api.awilixify.dev   → port 80  → unencrypted HTTP
+https://api.awilixify.dev  → port 443 → HTTP encrypted with TLS
+even amqp://rabbitmq.awilixify.dev
+```
+
+The standard ports may be omitted from a URL. The ALB has separate listeners
+for them. Port 80 redirects callers to HTTPS, while port 443 presents the ACM
+certificate, decrypts the request, and routes it to the application:
+
+```text
+Browser → ALB port 80 → redirect to HTTPS
+Browser → ALB port 443 → TLS ends at ALB → HTTP inside VPC → Service → Pod
+```
+
+The certificate proves that the server is authorized to serve a domain name;
+it is attached to the ALB's HTTPS listener rather than purchased with the
+domain. A non-exportable public ACM certificate used by an ALB has no separate
+certificate charge and can renew automatically while DNS validation remains in
+place. Because `.dev` is HSTS-preloaded, browsers may upgrade HTTP to HTTPS
+before reaching the port 80 redirect, but keeping the redirect is still useful
+for other clients.
+
+### Why does the browser enforce HSTS for `.dev`?
+
+HSTS means **HTTP Strict Transport Security**. Normally, a server teaches a
+browser to use HTTPS for future visits by returning a header such as:
+
+```http
+Strict-Transport-Security: max-age=31536000
+```
+
+That leaves the first HTTP visit vulnerable: an attacker could intercept it and
+prevent the redirect to HTTPS before the browser has learned the rule. Browsers
+therefore ship with an HSTS preload list. The entire `.dev` top-level domain is
+on that list, so a browser already knows to replace HTTP with HTTPS before it
+sends the first network request:
+
+```text
+Entered:    http://api.awilixify.dev
+Browser:    upgrades the URL locally
+Connects:   https://api.awilixify.dev on port 443
+```
+
+Port 80 is not disabled; non-browser clients can still call it, which is why an
+HTTP-to-HTTPS redirect remains useful. The policy belongs to the browser because
+the browser chooses the protocol and validates certificates. DNS only resolves
+the hostname to a destination. HSTS applies to browser HTTP traffic, not AMQP,
+SSH, or other protocols.
+
 ## Questions
 
 ### Does Kubernetes provide the underlying network itself?

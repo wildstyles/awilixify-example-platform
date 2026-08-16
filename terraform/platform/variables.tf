@@ -9,3 +9,9 @@ variable "project_name" {
   type        = string
   default     = "awilixify-example-platform"
 }
+
+variable "domain_name" {
+  description = "Registered domain whose DNS is hosted by Route 53."
+  type        = string
+  default     = "awilixify.site"
+}

@@ -99,6 +99,41 @@ data "aws_iam_policy_document" "github_terraform" {
     ]
     resources = ["arn:aws:secretsmanager:eu-west-1:${data.aws_caller_identity.current.account_id}:secret:${local.project}/*"]
   }
+
+  # Route 53 will host DNS for the externally registered learning domain. These
+  # permissions let the persistent platform stack create its hosted zone and,
+  # in the next stage, manage DNS records used by ACM and the application.
+  # Creation and change-status APIs cannot be scoped to a zone before it exists.
+  statement {
+    actions = [
+      "route53:ChangeResourceRecordSets",
+      "route53:ChangeTagsForResource",
+      "route53:CreateHostedZone",
+      "route53:DeleteHostedZone",
+      "route53:GetChange",
+      "route53:GetHostedZone",
+      "route53:ListHostedZones",
+      "route53:ListResourceRecordSets",
+      "route53:ListTagsForResource",
+    ]
+    resources = ["*"]
+  }
+
+  # ACM will issue the public certificate used by the ALB. Terraform manages
+  # the certificate lifecycle, while DNS records prove control of the domain.
+  # RequestCertificate also has no certificate ARN until creation completes.
+  statement {
+    actions = [
+      "acm:AddTagsToCertificate",
+      "acm:DeleteCertificate",
+      "acm:DescribeCertificate",
+      "acm:ListCertificates",
+      "acm:ListTagsForCertificate",
+      "acm:RemoveTagsFromCertificate",
+      "acm:RequestCertificate",
+    ]
+    resources = ["*"]
+  }
 }
 
 # This resource attaches the permissions above to the Terraform role. The role
