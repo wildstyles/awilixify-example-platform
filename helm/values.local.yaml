@@ -2,6 +2,10 @@ ordersApi:
   config:
     deploymentEnvironment: local-kubernetes
 
+# Minikube has no AWS Load Balancer Controller or ALB.
+ingress:
+  enabled: false
+
 warehouseApi:
   config:
     deploymentEnvironment: local-kubernetes

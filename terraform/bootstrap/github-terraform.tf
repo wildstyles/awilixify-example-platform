@@ -51,9 +51,9 @@ data "aws_iam_policy_document" "github_terraform" {
 
   # This statement does not create or assign the EKS roles. It gives the GitHub
   # Terraform role permission to manage the project-prefixed roles declared in
-  # terraform/eks/iam.tf: the EKS control plane, EC2 worker node, and External
-  # Secrets identities. Those are AWS service/runtime roles and are separate
-  # from the existing Identity Center role used for human cluster access.
+  # terraform/eks/iam.tf: the EKS control plane, EC2 worker node, External
+  # Secrets, and load-balancer identities. Those are AWS service/runtime roles
+  # and are separate from the Identity Center role used for human access.
   statement {
     actions = [
       "iam:AttachRolePolicy",

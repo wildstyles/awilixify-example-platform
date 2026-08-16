@@ -22,6 +22,7 @@ env:
   NAMESPACE: awilixify-example-platform
   ECR_NAMESPACE: awilixify-example-platform
   EXTERNAL_SECRETS_VERSION: 2.8.0
+  LOAD_BALANCER_CONTROLLER_VERSION: 3.5.0
 
 jobs:
   deploy:
@@ -82,6 +83,24 @@ jobs:
             --wait \
             --timeout 5m
 
+      # This controller watches our Ingress and creates the corresponding AWS
+      # ALB. Pod Identity supplies its AWS credentials; Helm installs only the
+      # controller's Kubernetes resources.
+      - name: Install AWS Load Balancer Controller
+        shell: bash
+        run: |
+          helm repo add eks https://aws.github.io/eks-charts
+          helm repo update eks
+          helm upgrade --install aws-load-balancer-controller eks/aws-load-balancer-controller \
+            --namespace kube-system \
+            --version "${LOAD_BALANCER_CONTROLLER_VERSION}" \
+            --set clusterName="${CLUSTER_NAME}" \
+            --set region="${AWS_REGION}" \
+            --set serviceAccount.name=aws-load-balancer-controller \
+            --set replicaCount=1 \
+            --wait \
+            --timeout 5m
+
       - name: Deploy application chart
         env:
           IMAGE_TAG: ${{ inputs.image_tag }}
@@ -99,5 +118,5 @@ jobs:
 
       - name: Show deployment status
         run: |
-          kubectl get externalsecret,pods,services --namespace "${NAMESPACE}"
+          kubectl get externalsecret,pods,services,ingress --namespace "${NAMESPACE}"
           kubectl get nodes

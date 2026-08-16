@@ -54,13 +54,13 @@ is not a milestone.
 The projects are now independent published repositories. The example platform
 uses their released packages and image directly:
 
-| Project | Source | Published artifact used here |
-| --- | --- | --- |
-| Example platform | [wildstyles/awilixify-example-platform](https://github.com/wildstyles/awilixify-example-platform) | Images built by this repository |
-| Awilixify | [awilixify/awilixify](https://github.com/awilixify/awilixify) | [`awilixify`](https://www.npmjs.com/package/awilixify) `^3.2.0` |
-| CLI | [awilixify/awilixify-cli](https://github.com/awilixify/awilixify-cli) | [`@awilixify/cli`](https://www.npmjs.com/package/@awilixify/cli) `^0.1.0` |
-| DevTools API | [awilixify/awilixify-devtools](https://github.com/awilixify/awilixify-devtools) | [`@awilixify/devtools`](https://www.npmjs.com/package/@awilixify/devtools) `^0.2.0` |
-| DevTools UI | [awilixify/awilixify-devtools-ui](https://github.com/awilixify/awilixify-devtools-ui) | `ghcr.io/awilixify/awilixify-devtools-ui:0.1.1` |
+| Project          | Source                                                                                            | Published artifact used here                                                        |
+| ---------------- | ------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Example platform | [wildstyles/awilixify-example-platform](https://github.com/wildstyles/awilixify-example-platform) | Images built by this repository                                                     |
+| Awilixify        | [awilixify/awilixify](https://github.com/awilixify/awilixify)                                     | [`awilixify`](https://www.npmjs.com/package/awilixify) `^3.2.0`                     |
+| CLI              | [awilixify/awilixify-cli](https://github.com/awilixify/awilixify-cli)                             | [`@awilixify/cli`](https://www.npmjs.com/package/@awilixify/cli) `^0.1.0`           |
+| DevTools API     | [awilixify/awilixify-devtools](https://github.com/awilixify/awilixify-devtools)                   | [`@awilixify/devtools`](https://www.npmjs.com/package/@awilixify/devtools) `^0.2.0` |
+| DevTools UI      | [awilixify/awilixify-devtools-ui](https://github.com/awilixify/awilixify-devtools-ui)             | `ghcr.io/awilixify/awilixify-devtools-ui:0.1.1`                                     |
 
 Versions above reflect the current `package.json` and `compose.yaml`. Update
 them through normal dependency upgrades; deployment work does not require the
@@ -676,11 +676,11 @@ The first verifier only reports evidence; it does not edit code.
 - [ ] Helm installs the complete platform with local values.
 - [ ] HTTP, messaging, DevTools, and trace persistence checks pass.
 - [ ] `kubectl top`, K9s, Headlamp, and Grafana show resource use and workload
-  state.
+      state.
 - [ ] CPU throttling, OOM recovery, HPA, broken readiness, and pod replacement
-  have been observed and explained.
+      have been observed and explained.
 - [ ] The RabbitMQ operators, CLI tools, management UI, dashboards, alerts,
-  persistence, and recovery runbooks have been exercised.
+      persistence, and recovery runbooks have been exercised.
 - [ ] Failed upgrade and manual rollback are demonstrated.
 
 ### C. CI and stored artifacts
@@ -698,7 +698,7 @@ The first verifier only reports evidence; it does not edit code.
 - [ ] Staging smoke tests, automatic rollback, and manual rollback work.
 - [ ] DevTools is authenticated and observable.
 - [ ] Amazon MQ is private, observable, and compared with operator-managed
-  RabbitMQ using documented trade-offs.
+      RabbitMQ using documented trade-offs.
 
 ### E. Preview and AI verification
 
@@ -751,3 +751,6 @@ API above one replica.
 - [GitHub Actions OIDC for AWS](https://docs.github.com/actions/how-tos/secure-your-work/security-harden-deployments/oidc-in-aws)
 - [Terraform S3 backend](https://developer.hashicorp.com/terraform/language/backend/s3)
 - [Codex GitHub Action](https://developers.openai.com/codex/github-action)
+
+- blue/green deployments
+- cloudflare

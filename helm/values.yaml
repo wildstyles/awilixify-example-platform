@@ -5,6 +5,16 @@ global:
     tag: ""
     pullPolicy: IfNotPresent
 
+ingress:
+  # The AWS Load Balancer Controller turns this Kubernetes Ingress into one
+  # public Application Load Balancer. Local Kubernetes disables it below.
+  enabled: true
+  className: alb
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    # Route directly to Pod IPs, so the existing Services stay ClusterIP-only.
+    alb.ingress.kubernetes.io/target-type: ip
+
 ordersApi:
   replicas: 1
   image:

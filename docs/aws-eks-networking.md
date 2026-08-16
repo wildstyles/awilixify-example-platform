@@ -4,8 +4,9 @@
 
 No. Creating the cluster does not make application Pods public.
 
-The chart currently creates normal `ClusterIP` Services, so Orders, Warehouse,
-RabbitMQ, and DevTools are reachable only inside the cluster:
+The chart creates normal `ClusterIP` Services. The AWS configuration additionally
+creates an Ingress that exposes Orders and the DevTools UI through one ALB;
+Warehouse, RabbitMQ, and the service DevTools ports remain internal.
 
 ```text
 Pod → ClusterIP Service → matching Pods
@@ -18,16 +19,73 @@ The EKS Kubernetes API endpoint is public so GitHub-hosted runners and local
 `kubectl` can connect to it. IAM and EKS access policies protect that endpoint.
 This is separate from exposing the application APIs.
 
-To expose an application, explicitly add one of these:
+Common ways to expose an application are:
 
 - `kubectl port-forward` for temporary development access;
 - a `LoadBalancer` Service for an AWS network load balancer;
 - an Ingress and AWS Load Balancer Controller for HTTP routing through an ALB.
 
-Only the public HTTP entry points should be routed externally. RabbitMQ and the
+Only intended HTTP entry points should be routed externally. RabbitMQ and the
 service DevTools ports should normally remain cluster-internal.
 
 ## Questions
+
+### Does Kubernetes provide the underlying network itself?
+
+No. Kubernetes defines networking objects and desired behavior. The VPC,
+subnets, CNI, kube-proxy implementation, and cloud load balancer carry and route
+the real traffic.
+
+### Is an Ingress a load balancer?
+
+No. An Ingress is routing configuration. The AWS Load Balancer Controller reads
+it and creates/configures an ALB, which handles the real internet traffic:
+
+```text
+Ingress configuration → controller → AWS ALB
+Internet request       → AWS ALB → Pod
+```
+
+### Why is a separate Ingress controller needed?
+
+Kubernetes keeps Ingress vendor-neutral. A separately installed controller
+translates it into a concrete implementation, such as an AWS ALB, NGINX proxy,
+or another cloud provider's load balancer.
+
+### Is the load balancer inside Kubernetes, and why does Terraform not create it?
+
+The controller runs inside Kubernetes, but it calls the AWS Elastic Load
+Balancing API to create a real ALB outside the cluster. Terraform creates the
+VPC, EKS cluster, IAM role, and Pod Identity; Helm installs the controller and
+Ingress; the controller owns the resulting ALB and keeps its targets synchronized
+with the Pods. This is standard for Kubernetes-managed load balancers. The
+Ingress must be deleted before EKS so the controller can also delete the ALB.
+
+### Why use an AWS ALB instead of Traefik or NGINX?
+
+ALB is managed by AWS and routes directly to Pods, making it simple for an
+AWS-only cluster. Traefik and NGINX run as proxy Pods and offer more portable and
+custom routing, but they must be operated and still need an external AWS entry
+point.
+
+### Is an NLB simpler than an ALB, and why is it used with an in-cluster proxy?
+
+Yes, at the protocol level. An NLB forwards TCP/UDP connections by IP and port;
+an ALB understands HTTP hosts, paths, and headers. An NLB commonly provides the
+stable public entry point while Traefik or NGINX performs HTTP routing inside the
+cluster. An ALB can perform both jobs directly.
+
+### Why is it called a reverse proxy?
+
+`Reverse` describes which side the proxy represents, not the direction of
+traffic. A forward proxy represents and can hide the client from external
+servers. A reverse proxy represents and hides backend servers from clients. In
+this project, the browser knows the ALB address but not the selected Pod address:
+
+```text
+Forward proxy: client → proxy → external server  (hides the client)
+Reverse proxy: client → ALB   → application Pod (hides the backend)
+```
 
 ### What is an Internet Gateway?
 
@@ -106,3 +164,9 @@ It still needs protocol, host, port, username, and password. The cluster provide
 the stable Service hostname `rabbitmq`; it does not make the host or credentials
 optional. These fields can be passed separately or combined as
 `amqp://username:password@rabbitmq:5672`.
+
+### Can Grafana show Pod CPU and memory usage?
+
+Yes. Prometheus collects and stores node, Pod, and container metrics; Grafana
+queries them and displays current and historical CPU, memory, limits, throttling,
+restarts, and `OOMKilled` events. Grafana visualizes data but does not collect it.

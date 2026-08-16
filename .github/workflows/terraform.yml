@@ -35,6 +35,8 @@ concurrency:
 
 env:
   AWS_REGION: eu-west-1
+  CLUSTER_NAME: awilixify-example-platform
+  NAMESPACE: awilixify-example-platform
   TF_WORKING_DIR: terraform/${{ inputs.stack }}
   TF_STATE_BUCKET: awilixify-example-platform-${{ vars.AWS_ACCOUNT_ID }}-terraform-state
   # Terraform reads TF_VAR_<name> implicitly, so this environment variable
@@ -75,6 +77,35 @@ jobs:
         with:
           aws-region: ${{ env.AWS_REGION }}
           role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/awilixify-example-platform-github-terraform
+
+      # Ingress owns an AWS load balancer outside Kubernetes. Delete the Helm
+      # release first so its controller can remove the ALB before Terraform
+      # deletes the cluster. Repeated destroys remain safe if EKS is gone.
+      - name: Remove Kubernetes-managed AWS resources
+        if: inputs.stack == 'eks' && inputs.operation == 'destroy'
+        shell: bash
+        run: |
+          if ! aws eks describe-cluster --region "${AWS_REGION}" --name "${CLUSTER_NAME}" >/dev/null 2>&1; then
+            echo "EKS cluster is already absent; continuing Terraform cleanup."
+            exit 0
+          fi
+
+          aws eks update-kubeconfig --region "${AWS_REGION}" --name "${CLUSTER_NAME}"
+          helm uninstall awilixify-example-platform \
+            --namespace "${NAMESPACE}" \
+            --ignore-not-found \
+            --wait \
+            --timeout 10m
+          helm uninstall aws-load-balancer-controller \
+            --namespace kube-system \
+            --ignore-not-found \
+            --wait \
+            --timeout 5m
+          helm uninstall external-secrets \
+            --namespace external-secrets \
+            --ignore-not-found \
+            --wait \
+            --timeout 5m
 
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v4.0.1

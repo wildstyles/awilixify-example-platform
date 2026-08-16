@@ -1,0 +1,34 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: awilixify-example-platform
+  labels:
+    {{- include "awilixify-example-platform.labels" . | nindent 4 }}
+  # These annotations tell the AWS controller what kind of ALB to create.
+  annotations:
+    {{- toYaml .Values.ingress.annotations | nindent 4 }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  rules:
+    # Kubernetes chooses the longest matching path, so Orders wins for
+    # `/orders`; every other browser path opens the DevTools UI.
+    - http:
+        paths:
+          - path: /orders
+            pathType: Prefix
+            backend:
+              service:
+                name: orders-api
+                port:
+                  name: http
+          {{- if .Values.devtoolsUi.enabled }}
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: devtools-ui
+                port:
+                  name: http
+          {{- end }}
+{{- end }}

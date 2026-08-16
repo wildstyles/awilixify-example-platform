@@ -4,6 +4,12 @@ metadata:
   name: orders-api
   labels:
     {{- include "awilixify-example-platform.labels" . | nindent 4 }}
+  {{- if .Values.ingress.enabled }}
+  # The ALB uses the API's readiness endpoint instead of treating a 404 at `/`
+  # as an unhealthy target.
+  annotations:
+    alb.ingress.kubernetes.io/healthcheck-path: /health/ready
+  {{- end }}
 spec:
   # Routes traffic to Pods carrying this label.
   selector:

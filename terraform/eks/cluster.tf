@@ -82,12 +82,14 @@ resource "aws_eks_addon" "after_compute" {
   depends_on = [aws_eks_node_group.learning]
 }
 
-# Access entries map AWS IAM roles to Kubernetes access. The human Identity
-# Center role and the GitHub deployer both receive admin access for this demo.
+# Access entries map AWS IAM roles to Kubernetes access. The human and deployer
+# administer the demo; Terraform also needs access to remove the Ingress and
+# let its controller delete the ALB before destroying EKS.
 resource "aws_eks_access_entry" "admin" {
   for_each = {
-    human    = var.admin_role_arn
-    deployer = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${local.project}-github-deployer"
+    human     = var.admin_role_arn
+    deployer  = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${local.project}-github-deployer"
+    terraform = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${local.project}-github-terraform"
   }
 
   cluster_name  = aws_eks_cluster.this.name
@@ -114,6 +116,17 @@ resource "aws_eks_pod_identity_association" "external_secrets" {
   namespace       = "external-secrets"
   service_account = "external-secrets"
   role_arn        = aws_iam_role.external_secrets.arn
+
+  depends_on = [aws_eks_addon.before_compute]
+}
+
+# The controller receives temporary credentials only from this service account;
+# no AWS access key is stored in Kubernetes or GitHub.
+resource "aws_eks_pod_identity_association" "load_balancer_controller" {
+  cluster_name    = aws_eks_cluster.this.name
+  namespace       = "kube-system"
+  service_account = "aws-load-balancer-controller"
+  role_arn        = aws_iam_role.load_balancer_controller.arn
 
   depends_on = [aws_eks_addon.before_compute]
 }

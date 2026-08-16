@@ -1,7 +1,7 @@
 # These IAM roles exist in AWS, not inside Kubernetes, and are separate from the
 # existing Identity Center admin role used by a human. The EKS control plane,
-# EC2 worker node, and External Secrets controller each need their own narrowly
-# scoped AWS identity because they cannot operate as the human administrator.
+# EC2 worker node, External Secrets, and load-balancer controllers each need
+# their own AWS identity because they cannot operate as the human administrator.
 
 # An assume-role policy answers who may become an IAM role. EKS control plane
 # service assumes this role to manage cluster resources on our behalf.
@@ -95,4 +95,29 @@ data "aws_iam_policy_document" "external_secrets" {
 resource "aws_iam_role_policy" "external_secrets" {
   role   = aws_iam_role.external_secrets.id
   policy = data.aws_iam_policy_document.external_secrets.json
+}
+
+# The AWS Load Balancer Controller watches Kubernetes Ingress objects and
+# creates their ALBs, target groups, listeners, and security-group rules.
+data "aws_iam_policy_document" "load_balancer_controller_assume_role" {
+  statement {
+    actions = ["sts:AssumeRole", "sts:TagSession"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["pods.eks.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "load_balancer_controller" {
+  name               = "${local.project}-load-balancer-controller"
+  assume_role_policy = data.aws_iam_policy_document.load_balancer_controller_assume_role.json
+}
+
+# Keep the controller's version-pinned upstream policy separate from our role
+# wiring. This avoids copying a large vendor policy into the readable IAM file.
+resource "aws_iam_role_policy" "load_balancer_controller" {
+  role   = aws_iam_role.load_balancer_controller.id
+  policy = file("${path.module}/policies/aws-load-balancer-controller-v3.5.0.json")
 }

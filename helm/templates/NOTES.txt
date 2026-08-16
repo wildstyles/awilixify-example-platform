@@ -1,7 +1,12 @@
 The platform is installed in namespace {{ .Release.Namespace }}.
 
 Inspect the workloads:
-  kubectl get pods,services --namespace {{ .Release.Namespace }}
+  kubectl get pods,services,ingress --namespace {{ .Release.Namespace }}
+
+{{- if .Values.ingress.enabled }}
+The Ingress ADDRESS is the public ALB hostname. It can take a few minutes to appear:
+  kubectl get ingress awilixify-example-platform --namespace {{ .Release.Namespace }}
+{{- end }}
 
 Access the services locally with separate terminals:
   kubectl port-forward --namespace {{ .Release.Namespace }} service/orders-api 3000:3000 3221:3221
