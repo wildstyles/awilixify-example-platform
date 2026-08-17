@@ -125,6 +125,65 @@ SSH, or other protocols.
 
 ## Questions
 
+### What does a Route 53 hosted zone do?
+
+A public hosted zone contains the DNS records for one domain and its
+subdomains. It makes Route 53 the authoritative DNS provider, while the domain
+can remain registered at another company such as Namecheap. For example:
+
+```text
+api.awilixify.site       → AWS load balancer
+devtools.awilixify.site  → AWS load balancer
+```
+
+### How does ACM validate a certificate request?
+
+Anyone can request a certificate for a domain, so ACM first creates it as
+`PENDING_VALIDATION` and provides a CNAME—a DNS alias—such as:
+
+```text
+_abc.api.awilixify.site CNAME → _xyz.acm-validations.aws
+```
+
+Terraform adds this alias to the Route 53 zone authoritative for
+`awilixify.site`. ACM queries the exact `_abc...` name through public DNS and
+expects the `_xyz...` target. Only someone controlling that zone can normally
+publish the alias, so a match proves domain control and ACM marks the
+certificate `ISSUED`.
+
+The CNAME is used only for validation and automatic renewal; it does not route
+browser traffic. The certificate remains in ACM and is attached separately to
+the ALB's HTTPS listener. Keep the CNAME in Route 53 for managed renewal.
+
+### Is the validation CNAME similar to the application Alias?
+
+Yes. Both are records in the same Route 53 zone:
+
+```text
+api.awilixify.site       A/Alias → application load balancer
+_abc.api.awilixify.site CNAME  → _xyz.acm-validations.aws
+```
+
+The application Alias ultimately resolves to load-balancer IPs; the CNAME
+aliases one hostname to another. The generated `_abc...` name is a subdomain,
+not a URL path.
+
+### Does every HTTP request pass through Route 53?
+
+No. DNS resolution and application traffic are separate. Route 53 answers where
+the hostname currently points; the browser then connects directly to that
+destination:
+
+```text
+Browser ──DNS question──→ Route 53
+Browser ──HTTPS request──→ ALB → Service → Pod
+```
+
+The browser, operating system, or recursive DNS resolver caches the answer for
+the record's TTL. It asks DNS again after the cache expires, rather than for
+every HTTP request. Route 53 handles the hostname, such as
+`api.awilixify.site`; the ALB and Ingress handle HTTP paths such as `/orders`.
+
 ### Does Kubernetes provide the underlying network itself?
 
 No. Kubernetes defines networking objects and desired behavior. The VPC,
