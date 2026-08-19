@@ -11,9 +11,8 @@ metadata:
 spec:
   ingressClassName: {{ .Values.ingress.className }}
   rules:
-    # Kubernetes chooses the longest matching path, so Orders wins for
-    # `/orders`; every other browser path opens the DevTools UI.
-    - http:
+    - host: {{ .Values.ingress.hosts.api | quote }}
+      http:
         paths:
           - path: /orders
             pathType: Prefix
@@ -22,7 +21,10 @@ spec:
                 name: orders-api
                 port:
                   name: http
-          {{- if .Values.devtoolsUi.enabled }}
+    {{- if .Values.devtoolsUi.enabled }}
+    - host: {{ .Values.ingress.hosts.devtools | quote }}
+      http:
+        paths:
           - path: /
             pathType: Prefix
             backend:
@@ -30,5 +32,5 @@ spec:
                 name: devtools-ui
                 port:
                   name: http
-          {{- end }}
+    {{- end }}
 {{- end }}

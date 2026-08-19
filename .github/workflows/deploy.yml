@@ -1,5 +1,5 @@
+---
 name: Deploy to EKS
-
 on:
   workflow_dispatch:
     inputs:
@@ -7,28 +7,25 @@ on:
         description: Existing immutable ECR image tag, for example 0.1.1
         required: true
         type: string
-
 permissions:
   contents: read
   id-token: write
-
 concurrency:
   group: deploy-eks
   cancel-in-progress: false
-
 env:
   AWS_REGION: eu-west-1
   CLUSTER_NAME: awilixify-example-platform
   NAMESPACE: awilixify-example-platform
   ECR_NAMESPACE: awilixify-example-platform
+  DOMAIN_NAME: awilixify.site
   EXTERNAL_SECRETS_VERSION: 2.8.0
+  EXTERNAL_DNS_VERSION: 1.21.1
   LOAD_BALANCER_CONTROLLER_VERSION: 3.5.0
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
-
     steps:
       - name: Check repository configuration
         shell: bash
@@ -37,16 +34,13 @@ jobs:
             echo "Set the AWS_ACCOUNT_ID repository variable." >&2
             exit 1
           fi
-
       - name: Check out repository
         uses: actions/checkout@v6
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6.2.3
         with:
           aws-region: ${{ env.AWS_REGION }}
           role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/awilixify-example-platform-github-deployer
-
       - name: Confirm both images exist
         env:
           IMAGE_TAG: ${{ inputs.image_tag }}
@@ -57,7 +51,6 @@ jobs:
               --repository-name "${ECR_NAMESPACE}/${service}" \
               --image-ids "imageTag=${IMAGE_TAG}" >/dev/null
           done
-
       - name: Connect kubectl to EKS
         run: aws eks update-kubeconfig --region "${AWS_REGION}" --name "${CLUSTER_NAME}"
 
@@ -101,6 +94,30 @@ jobs:
             --wait \
             --timeout 5m
 
+      # ExternalDNS watches Ingress host rules and creates Route 53 records
+      # pointing them at the ALB. Its Pod Identity role is
+      # restricted to this project's public hosted zone.
+      - name: Install ExternalDNS
+        shell: bash
+        run: |
+          helm repo add external-dns https://kubernetes-sigs.github.io/external-dns/
+          helm repo update external-dns
+          helm upgrade --install external-dns external-dns/external-dns \
+            --namespace external-dns \
+            --create-namespace \
+            --version "${EXTERNAL_DNS_VERSION}" \
+            --set-string provider.name=aws \
+            --set-string serviceAccount.name=external-dns \
+            --set-string policy=sync \
+            --set-string txtOwnerId="${CLUSTER_NAME}" \
+            --set-string "domainFilters[0]=${DOMAIN_NAME}" \
+            --set-string "sources[0]=ingress" \
+            --set-string "env[0].name=AWS_DEFAULT_REGION" \
+            --set-string "env[0].value=${AWS_REGION}" \
+            --set-string extraArgs.aws-zone-type=public \
+            --set triggerLoopOnEvent=true \
+            --wait \
+            --timeout 5m
       - name: Deploy application chart
         env:
           IMAGE_TAG: ${{ inputs.image_tag }}
@@ -116,7 +133,24 @@ jobs:
             --wait \
             --timeout 10m
 
-      - name: Show deployment status
+      # Helm does not wait for controller-managed ALB listeners or Route 53
+      # changes. Curl retries until ExternalDNS publishes both names and the
+      # ALB can complete a trusted TLS handshake with the discovered ACM cert.
+      - name: Verify public HTTPS
+        shell: bash
         run: |
+          for hostname in "api.${DOMAIN_NAME}" "devtools.${DOMAIN_NAME}"; do
+            curl --silent --show-error --output /dev/null \
+              --retry 30 \
+              --retry-all-errors \
+              --retry-delay 10 \
+              --retry-max-time 600 \
+              --connect-timeout 10 \
+              --max-time 20 \
+              "https://${hostname}/"
+          done
+      - name: Show deployment status
+        run: |-
           kubectl get externalsecret,pods,services,ingress --namespace "${NAMESPACE}"
+          kubectl get pods --namespace external-dns
           kubectl get nodes

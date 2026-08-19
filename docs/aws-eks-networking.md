@@ -168,6 +168,55 @@ The application Alias ultimately resolves to load-balancer IPs; the CNAME
 aliases one hostname to another. The generated `_abc...` name is a subdomain,
 not a URL path.
 
+### How are HTTPS and application DNS attached to the ALB?
+
+The AWS Load Balancer Controller reads the Ingress host rules, finds their
+matching issued ACM certificate, and attaches it to the ALB's port 443 listener.
+ExternalDNS reads the same hosts and the ALB address from Ingress status, then
+creates their Route 53 application records. Both controllers keep their AWS
+resources synchronized with the Ingress.
+
+### How does ExternalDNS know what Route 53 record to create?
+
+ExternalDNS watches the Ingress host rule:
+
+```yaml
+- host: api.awilixify.site
+```
+
+When the AWS Load Balancer Controller creates an ALB, AWS assigns it a hostname
+that remains stable for that ALB's lifetime, although its IP addresses may
+change. The controller writes that hostname into the Ingress's status, and
+ExternalDNS combines it with the host rule to create:
+
+```text
+api.awilixify.site → the Ingress's ALB hostname
+```
+
+Route 53 does not discover the ALB itself; ExternalDNS maintains this mapping.
+
+### Does TLS validation happen for every HTTP request?
+
+No. The ALB presents its ACM certificate during the TLS handshake for a new
+connection. That encrypted connection can carry many HTTP requests. Closing a
+browser tab does not guarantee that the browser closes the connection; it may
+reuse an existing connection, or create a new one using faster TLS session
+resumption.
+
+### How do TCP, TLS, and HTTP work together?
+
+For HTTP/1.1 and HTTP/2 over HTTPS, they run in this order:
+
+```text
+1. TCP handshake → opens a reliable two-way byte stream to ALB port 443
+2. TLS handshake → validates the certificate and establishes encryption keys
+3. HTTP          → sends encrypted requests and responses through that stream
+```
+
+TCP is the reliable pipe, TLS secures the pipe, and HTTP defines the messages
+sent through it. The connection can carry multiple HTTP requests. HTTP/3 is the
+exception: it uses TLS within QUIC over UDP instead of TCP.
+
 ### Does every HTTP request pass through Route 53?
 
 No. DNS resolution and application traffic are separate. Route 53 answers where

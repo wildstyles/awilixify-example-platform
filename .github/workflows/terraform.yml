@@ -96,6 +96,11 @@ jobs:
             --ignore-not-found \
             --wait \
             --timeout 10m
+          helm uninstall external-dns \
+            --namespace external-dns \
+            --ignore-not-found \
+            --wait \
+            --timeout 5m
           helm uninstall aws-load-balancer-controller \
             --namespace kube-system \
             --ignore-not-found \

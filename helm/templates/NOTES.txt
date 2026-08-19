@@ -6,6 +6,10 @@ Inspect the workloads:
 {{- if .Values.ingress.enabled }}
 The Ingress ADDRESS is the public ALB hostname. It can take a few minutes to appear:
   kubectl get ingress awilixify-example-platform --namespace {{ .Release.Namespace }}
+
+Public HTTPS endpoints:
+  https://{{ .Values.ingress.hosts.api }}/orders/order-001
+  https://{{ .Values.ingress.hosts.devtools }}/
 {{- end }}
 
 Access the services locally with separate terminals:

@@ -19,6 +19,8 @@ permission policy = what the role may do
 | `awilixify-example-platform-eks-cluster` | AWS EKS control plane | Operate AWS resources needed by the cluster | EKS Terraform stack |
 | `awilixify-example-platform-eks-node` | EC2 worker node | Join EKS, configure networking, and pull ECR images | EKS Terraform stack |
 | `awilixify-example-platform-external-secrets` | External Secrets Operator through EKS Pod Identity | Read only the RabbitMQ value from Secrets Manager | EKS Terraform stack |
+| `awilixify-example-platform-external-dns` | ExternalDNS through EKS Pod Identity | Maintain application records in the project's Route 53 zone | EKS Terraform stack |
+| `awilixify-example-platform-load-balancer-controller` | AWS Load Balancer Controller through EKS Pod Identity | Create and reconcile ALBs, listeners, and target groups | EKS Terraform stack |
 
 The service/runtime roles exist in AWS IAM, not inside Kubernetes. EKS and Pod
 Identity associate them with the control plane, node, or controller that uses
@@ -44,6 +46,8 @@ GitHub assumes github-terraform with a short-lived OIDC session
     ├── creates the EKS control-plane role
     ├── creates the EC2 node role
     ├── creates the External Secrets role
+    ├── creates the ExternalDNS role
+    ├── creates the AWS Load Balancer Controller role
     └── grants EKS access to the human and GitHub deployer roles
 ```
 

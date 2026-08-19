@@ -10,10 +10,19 @@ ingress:
   # public Application Load Balancer. Local Kubernetes disables it below.
   enabled: true
   className: alb
+  hosts:
+    api: api.awilixify.site
+    devtools: devtools.awilixify.site
   annotations:
     alb.ingress.kubernetes.io/scheme: internet-facing
     # Route directly to Pod IPs, so the existing Services stay ClusterIP-only.
     alb.ingress.kubernetes.io/target-type: ip
+    # Requesting an HTTPS listener requires a certificate. Because no explicit
+    # certificate ARN is set, the controller searches ACM for an issued
+    # certificate matching the Ingress host rules and attaches it to port 443.
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80},{"HTTPS":443}]'
+    # Plain HTTP requests are redirected to the TLS listener above.
+    alb.ingress.kubernetes.io/ssl-redirect: "443"
 
 ordersApi:
   replicas: 1
@@ -24,7 +33,7 @@ ordersApi:
     devtoolsPort: 3221
   config:
     deploymentEnvironment: aws-eks
-    publicAppUrl: http://localhost:3000
+    publicAppUrl: https://api.awilixify.site
     serviceName: orders
     warehouseApiUrl: http://warehouse-api:3001
   resources:

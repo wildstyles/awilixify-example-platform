@@ -754,3 +754,4 @@ API above one replica.
 
 - blue/green deployments
 - cloudflare
+- zabbix

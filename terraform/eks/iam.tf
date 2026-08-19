@@ -1,7 +1,8 @@
 # These IAM roles exist in AWS, not inside Kubernetes, and are separate from the
 # existing Identity Center admin role used by a human. The EKS control plane,
-# EC2 worker node, External Secrets, and load-balancer controllers each need
-# their own AWS identity because they cannot operate as the human administrator.
+# EC2 worker node, External Secrets, ExternalDNS, and load-balancer controllers
+# each need their own AWS identity because they cannot operate as the human
+# administrator.
 
 # An assume-role policy answers who may become an IAM role. EKS control plane
 # service assumes this role to manage cluster resources on our behalf.
