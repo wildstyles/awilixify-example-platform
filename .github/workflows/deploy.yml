@@ -52,7 +52,19 @@ jobs:
               --image-ids "imageTag=${IMAGE_TAG}" >/dev/null
           done
       - name: Connect kubectl to EKS
-        run: aws eks update-kubeconfig --region "${AWS_REGION}" --name "${CLUSTER_NAME}"
+        shell: bash
+        run: |
+          aws eks update-kubeconfig --region "${AWS_REGION}" --name "${CLUSTER_NAME}"
+          vpc_id="$(aws eks describe-cluster \
+            --region "${AWS_REGION}" \
+            --name "${CLUSTER_NAME}" \
+            --query 'cluster.resourcesVpcConfig.vpcId' \
+            --output text)"
+          if [[ -z "${vpc_id}" || "${vpc_id}" == "None" ]]; then
+            echo "Could not discover the EKS cluster VPC ID." >&2
+            exit 1
+          fi
+          echo "VPC_ID=${vpc_id}" >> "${GITHUB_ENV}"
 
       # This published Helm chart installs External Secrets Operator as a
       # separate controller running in the cluster. It watches SecretStore and
@@ -89,10 +101,11 @@ jobs:
             --version "${LOAD_BALANCER_CONTROLLER_VERSION}" \
             --set clusterName="${CLUSTER_NAME}" \
             --set region="${AWS_REGION}" \
+            --set vpcId="${VPC_ID}" \
             --set serviceAccount.name=aws-load-balancer-controller \
             --set replicaCount=1 \
             --wait \
-            --timeout 5m
+            --timeout 10m
 
       # ExternalDNS watches Ingress host rules and creates Route 53 records
       # pointing them at the ALB. Its Pod Identity role is
@@ -154,3 +167,20 @@ jobs:
           kubectl get externalsecret,pods,services,ingress --namespace "${NAMESPACE}"
           kubectl get pods --namespace external-dns
           kubectl get nodes
+
+      # Helm's timeout alone does not explain whether a Pod was pending,
+      # crashing, unable to pull its image, or missing AWS credentials.
+      - name: Show failure diagnostics
+        if: failure()
+        shell: bash
+        run: |
+          kubectl get nodes --output wide || true
+          kubectl get pods --all-namespaces --output wide || true
+          kubectl describe deployment aws-load-balancer-controller \
+            --namespace kube-system || true
+          kubectl logs deployment/aws-load-balancer-controller \
+            --namespace kube-system \
+            --all-containers \
+            --tail=200 || true
+          kubectl get events --all-namespaces \
+            --sort-by=.lastTimestamp | tail -n 100 || true
