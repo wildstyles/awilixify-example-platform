@@ -19,9 +19,6 @@ env:
   NAMESPACE: awilixify-example-platform
   ECR_NAMESPACE: awilixify-example-platform
   DOMAIN_NAME: awilixify.site
-  EXTERNAL_SECRETS_VERSION: 2.8.0
-  EXTERNAL_DNS_VERSION: 1.21.1
-  LOAD_BALANCER_CONTROLLER_VERSION: 3.5.0
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -66,85 +63,21 @@ jobs:
           fi
           echo "VPC_ID=${vpc_id}" >> "${GITHUB_ENV}"
 
-      # This published Helm chart installs External Secrets Operator as a
-      # separate controller running in the cluster. It watches SecretStore and
-      # ExternalSecret objects created by our application chart, reads AWS
-      # Secrets Manager using Pod Identity, and creates/updates normal
-      # Kubernetes Secrets consumed by Pods.
-      #
-      # `upgrade --install` is idempotent: the first deployment installs the
-      # tool; later deployments check the existing release and change it only
-      # when its pinned version or configuration changes.
-      - name: Install External Secrets Operator
-        shell: bash
-        run: |
-          helm repo add external-secrets https://charts.external-secrets.io
-          helm repo update external-secrets
-          helm upgrade --install external-secrets external-secrets/external-secrets \
-            --namespace external-secrets \
-            --create-namespace \
-            --version "${EXTERNAL_SECRETS_VERSION}" \
-            --set serviceAccount.name=external-secrets \
-            --wait \
-            --timeout 5m
-
-      # This controller watches our Ingress and creates the corresponding AWS
-      # ALB. Pod Identity supplies its AWS credentials; Helm installs only the
-      # controller's Kubernetes resources.
-      - name: Install AWS Load Balancer Controller
-        shell: bash
-        run: |
-          helm repo add eks https://aws.github.io/eks-charts
-          helm repo update eks
-          helm upgrade --install aws-load-balancer-controller eks/aws-load-balancer-controller \
-            --namespace kube-system \
-            --version "${LOAD_BALANCER_CONTROLLER_VERSION}" \
-            --set clusterName="${CLUSTER_NAME}" \
-            --set region="${AWS_REGION}" \
-            --set vpcId="${VPC_ID}" \
-            --set serviceAccount.name=aws-load-balancer-controller \
-            --set replicaCount=1 \
-            --wait \
-            --timeout 10m
-
-      # ExternalDNS watches Ingress host rules and creates Route 53 records
-      # pointing them at the ALB. Its Pod Identity role is
-      # restricted to this project's public hosted zone.
-      - name: Install ExternalDNS
-        shell: bash
-        run: |
-          helm repo add external-dns https://kubernetes-sigs.github.io/external-dns/
-          helm repo update external-dns
-          helm upgrade --install external-dns external-dns/external-dns \
-            --namespace external-dns \
-            --create-namespace \
-            --version "${EXTERNAL_DNS_VERSION}" \
-            --set-string provider.name=aws \
-            --set-string serviceAccount.name=external-dns \
-            --set-string policy=sync \
-            --set-string txtOwnerId="${CLUSTER_NAME}" \
-            --set-string "domainFilters[0]=${DOMAIN_NAME}" \
-            --set-string "sources[0]=ingress" \
-            --set-string "env[0].name=AWS_DEFAULT_REGION" \
-            --set-string "env[0].value=${AWS_REGION}" \
-            --set-string extraArgs.aws-zone-type=public \
-            --set triggerLoopOnEvent=true \
-            --wait \
-            --timeout 5m
-      - name: Deploy application chart
+      # Helmfile holds the complete release inventory, pinned chart versions,
+      # values, namespaces, and dependency order. Apply reconciles only the
+      # releases whose desired state differs from the cluster.
+      - name: Reconcile Helm releases
+        uses: helmfile/helmfile-action@v2.2.0
         env:
           IMAGE_TAG: ${{ inputs.image_tag }}
           ECR_REGISTRY: ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.eu-west-1.amazonaws.com
-        shell: bash
-        run: |
-          helm upgrade --install awilixify-example-platform ./helm \
-            --namespace "${NAMESPACE}" \
-            --create-namespace \
-            --set-string global.image.tag="${IMAGE_TAG}" \
-            --set-string ordersApi.image.repository="${ECR_REGISTRY}/${ECR_NAMESPACE}/orders-api" \
-            --set-string warehouseApi.image.repository="${ECR_REGISTRY}/${ECR_NAMESPACE}/warehouse-api" \
-            --wait \
-            --timeout 10m
+        with:
+          helmfile-version: v1.7.1
+          helm-version: v3.21.3
+          helm-plugins: https://github.com/databus23/helm-diff@v3.15.7
+          # A fresh EKS cluster has no releases or operator CRDs to diff yet.
+          helmfile-args: apply --skip-diff-on-install
+          helmfile-auto-init: "false"
 
       # Helm does not wait for controller-managed ALB listeners or Route 53
       # changes. Curl retries until ExternalDNS publishes both names and the
@@ -166,6 +99,8 @@ jobs:
         run: |-
           kubectl get externalsecret,pods,services,ingress --namespace "${NAMESPACE}"
           kubectl get pods --namespace external-dns
+          kubectl get externalsecret,secret --namespace monitoring
+          kubectl get pods --namespace monitoring
           kubectl get nodes
 
       # Helm's timeout alone does not explain whether a Pod was pending,
@@ -176,6 +111,8 @@ jobs:
         run: |
           kubectl get nodes --output wide || true
           kubectl get pods --all-namespaces --output wide || true
+          kubectl get prometheus,servicemonitor,podmonitor \
+            --all-namespaces || true
           kubectl describe deployment aws-load-balancer-controller \
             --namespace kube-system || true
           kubectl logs deployment/aws-load-balancer-controller \

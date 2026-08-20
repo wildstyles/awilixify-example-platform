@@ -36,7 +36,8 @@ concurrency:
 env:
   AWS_REGION: eu-west-1
   CLUSTER_NAME: awilixify-example-platform
-  NAMESPACE: awilixify-example-platform
+  ECR_NAMESPACE: awilixify-example-platform
+  DOMAIN_NAME: awilixify.site
   TF_WORKING_DIR: terraform/${{ inputs.stack }}
   TF_STATE_BUCKET: awilixify-example-platform-${{ vars.AWS_ACCOUNT_ID }}-terraform-state
   # Terraform reads TF_VAR_<name> implicitly, so this environment variable
@@ -78,39 +79,41 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
           role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/awilixify-example-platform-github-terraform
 
-      # Ingress owns an AWS load balancer outside Kubernetes. Delete the Helm
-      # release first so its controller can remove the ALB before Terraform
-      # deletes the cluster. Repeated destroys remain safe if EKS is gone.
-      - name: Remove Kubernetes-managed AWS resources
+      # Helmfile destroys releases in reverse dependency order: monitoring,
+      # application/Ingress, then controllers. That lets the load-balancer
+      # controller delete the ALB before Terraform removes EKS.
+      - name: Connect to EKS for release cleanup
+        id: eks_cleanup
         if: inputs.stack == 'eks' && inputs.operation == 'destroy'
         shell: bash
         run: |
           if ! aws eks describe-cluster --region "${AWS_REGION}" --name "${CLUSTER_NAME}" >/dev/null 2>&1; then
             echo "EKS cluster is already absent; continuing Terraform cleanup."
+            echo "cluster_exists=false" >> "${GITHUB_OUTPUT}"
             exit 0
           fi
 
           aws eks update-kubeconfig --region "${AWS_REGION}" --name "${CLUSTER_NAME}"
-          helm uninstall awilixify-example-platform \
-            --namespace "${NAMESPACE}" \
-            --ignore-not-found \
-            --wait \
-            --timeout 10m
-          helm uninstall external-dns \
-            --namespace external-dns \
-            --ignore-not-found \
-            --wait \
-            --timeout 5m
-          helm uninstall aws-load-balancer-controller \
-            --namespace kube-system \
-            --ignore-not-found \
-            --wait \
-            --timeout 5m
-          helm uninstall external-secrets \
-            --namespace external-secrets \
-            --ignore-not-found \
-            --wait \
-            --timeout 5m
+          echo "cluster_exists=true" >> "${GITHUB_OUTPUT}"
+
+      - name: Remove Kubernetes-managed AWS resources
+        if: >-
+          inputs.stack == 'eks' &&
+          inputs.operation == 'destroy' &&
+          steps.eks_cleanup.outputs.cluster_exists == 'true'
+        uses: helmfile/helmfile-action@v2.2.0
+        env:
+          # Helmfile renders its desired state before deletion. These values are
+          # placeholders only; destroy never installs or upgrades the charts.
+          IMAGE_TAG: destroy
+          ECR_REGISTRY: unused
+          VPC_ID: unused
+        with:
+          helmfile-version: v1.7.1
+          helm-version: v3.21.3
+          helm-plugins: https://github.com/databus23/helm-diff@v3.15.7
+          helmfile-args: destroy --skip-charts --delete-wait --delete-timeout 900
+          helmfile-auto-init: "false"
 
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v4.0.1

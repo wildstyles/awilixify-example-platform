@@ -84,8 +84,8 @@ data "aws_iam_policy_document" "github_terraform" {
     resources = ["*"]
   }
 
-  # The persistent platform stack owns only the RabbitMQ secret container.
-  # Its sensitive value is entered manually and never passes through Terraform.
+  # The persistent platform stack owns the RabbitMQ and Grafana secrets. The
+  # RabbitMQ value is entered manually; Terraform generates the Grafana value.
   statement {
     actions = [
       "secretsmanager:CreateSecret",
@@ -98,6 +98,16 @@ data "aws_iam_policy_document" "github_terraform" {
       "secretsmanager:UpdateSecret",
     ]
     resources = ["arn:aws:secretsmanager:eu-west-1:${data.aws_caller_identity.current.account_id}:secret:${local.project}/*"]
+  }
+
+  # Terraform creates and then reads back the generated Grafana secret version.
+  # Keep value access scoped away from the manually managed RabbitMQ secret.
+  statement {
+    actions = [
+      "secretsmanager:GetSecretValue",
+      "secretsmanager:PutSecretValue",
+    ]
+    resources = ["arn:aws:secretsmanager:eu-west-1:${data.aws_caller_identity.current.account_id}:secret:${local.project}/grafana-*"]
   }
 
   # Route 53 will host DNS for the externally registered learning domain. These

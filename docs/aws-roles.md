@@ -18,7 +18,7 @@ permission policy = what the role may do
 | `awilixify-example-platform-github-deployer` | Helm deployment GitHub workflow | Connect to EKS, verify images, and deploy the chart | Local bootstrap Terraform |
 | `awilixify-example-platform-eks-cluster` | AWS EKS control plane | Operate AWS resources needed by the cluster | EKS Terraform stack |
 | `awilixify-example-platform-eks-node` | EC2 worker node | Join EKS, configure networking, and pull ECR images | EKS Terraform stack |
-| `awilixify-example-platform-external-secrets` | External Secrets Operator through EKS Pod Identity | Read only the RabbitMQ value from Secrets Manager | EKS Terraform stack |
+| `awilixify-example-platform-external-secrets` | External Secrets Operator through EKS Pod Identity | Read only the RabbitMQ and Grafana values from Secrets Manager | EKS Terraform stack |
 | `awilixify-example-platform-external-dns` | ExternalDNS through EKS Pod Identity | Maintain application records in the project's Route 53 zone | EKS Terraform stack |
 | `awilixify-example-platform-load-balancer-controller` | AWS Load Balancer Controller through EKS Pod Identity | Create and reconcile ALBs, listeners, and target groups | EKS Terraform stack |
 
@@ -41,7 +41,8 @@ Human assumes that role and applies terraform/bootstrap locally
 GitHub assumes github-terraform with a short-lived OIDC session
 ├── applies terraform/platform
 │   ├── creates ECR repositories
-│   └── creates the RabbitMQ Secrets Manager container
+│   ├── creates the RabbitMQ Secrets Manager container
+│   └── creates the Grafana Secrets Manager value
 └── applies terraform/eks
     ├── creates the EKS control-plane role
     ├── creates the EC2 node role

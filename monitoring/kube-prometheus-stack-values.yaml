@@ -1,0 +1,130 @@
+# This is a disposable learning setup sized for the single t3.medium EKS node.
+# Prometheus and Grafana use ephemeral storage, so their data disappears with
+# their Pods or when the EKS stack is destroyed.
+
+alertmanager:
+  # Add Alertmanager when notification routing becomes part of the exercise.
+  enabled: false
+
+defaultRules:
+  rules:
+    alertmanager: false
+    # These EKS control-plane components are managed by AWS and do not expose
+    # scrape targets inside this cluster.
+    etcd: false
+    kubeControllerManager: false
+    kubeSchedulerAlerting: false
+    kubeSchedulerRecording: false
+
+kubeControllerManager:
+  enabled: false
+
+kubeEtcd:
+  enabled: false
+
+kubeScheduler:
+  enabled: false
+
+# Keep Grafana's secret synchronization with the monitoring release that uses
+# it. kube-prometheus-stack renders these objects like its normal templates;
+# External Secrets Operator then creates the native Kubernetes Secret.
+extraManifests:
+  - apiVersion: external-secrets.io/v1
+    kind: SecretStore
+    metadata:
+      name: aws-secrets-manager
+    spec:
+      provider:
+        aws:
+          service: SecretsManager
+          region: eu-west-1
+  - apiVersion: external-secrets.io/v1
+    kind: ExternalSecret
+    metadata:
+      name: grafana-admin
+    spec:
+      refreshInterval: 1h
+      secretStoreRef:
+        name: aws-secrets-manager
+        kind: SecretStore
+      target:
+        name: monitoring-grafana-admin
+        creationPolicy: Owner
+      dataFrom:
+        - extract:
+            key: awilixify-example-platform/grafana
+
+grafana:
+  # Keep Grafana private. Use kubectl port-forward as documented instead of
+  # creating another public ALB listener and DNS name for a learning session.
+  ingress:
+    enabled: false
+  service:
+    type: ClusterIP
+  admin:
+    # External Secrets Operator creates this Kubernetes Secret from the
+    # persistent Grafana credential stored in AWS Secrets Manager.
+    existingSecret: monitoring-grafana-admin
+    userKey: admin-user
+    passwordKey: admin-password
+  persistence:
+    enabled: false
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+prometheusOperator:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+
+prometheus:
+  prometheusSpec:
+    # Short retention and emptyDir storage are intentional for the disposable
+    # cluster. No EBS volume survives a Pod restart or EKS destruction.
+    retention: 6h
+    retentionSize: 1GB
+    scrapeInterval: 30s
+    evaluationInterval: 30s
+    walCompression: true
+    enableAdminAPI: false
+    resources:
+      requests:
+        cpu: 200m
+        memory: 512Mi
+      limits:
+        cpu: 750m
+        memory: 1Gi
+
+    # Discover future ServiceMonitor and PodMonitor resources in any namespace,
+    # including the application metrics that will be added separately.
+    serviceMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorNamespaceSelector: {}
+    podMonitorSelectorNilUsesHelmValues: false
+    podMonitorNamespaceSelector: {}
+
+kube-state-metrics:
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    limits:
+      cpu: 150m
+      memory: 128Mi
+
+prometheus-node-exporter:
+  resources:
+    requests:
+      cpu: 25m
+      memory: 32Mi
+    limits:
+      cpu: 150m
+      memory: 96Mi

@@ -77,19 +77,27 @@ resource "aws_iam_role" "external_secrets" {
   assume_role_policy = data.aws_iam_policy_document.external_secrets_assume_role.json
 }
 
-# Look up the long-lived secret created by terraform/platform.
+# Look up the long-lived secrets created by terraform/platform.
 data "aws_secretsmanager_secret" "rabbitmq" {
   name = "${local.project}/rabbitmq"
 }
 
-# This policy grants read-only access to exactly one Secrets Manager secret.
+data "aws_secretsmanager_secret" "grafana" {
+  name = "${local.project}/grafana"
+}
+
+# This policy grants read-only access to only the secrets synchronized into
+# Kubernetes by External Secrets Operator.
 data "aws_iam_policy_document" "external_secrets" {
   statement {
     actions = [
       "secretsmanager:DescribeSecret",
       "secretsmanager:GetSecretValue",
     ]
-    resources = [data.aws_secretsmanager_secret.rabbitmq.arn]
+    resources = [
+      data.aws_secretsmanager_secret.grafana.arn,
+      data.aws_secretsmanager_secret.rabbitmq.arn,
+    ]
   }
 }
 
