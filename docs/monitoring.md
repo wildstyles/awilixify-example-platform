@@ -160,3 +160,73 @@ learning environment.
 
 Grafana changes are also ephemeral. Grafana itself does not become another copy
 of the Tempo or Prometheus data.
+
+### Why are there 25 Pods when the platform has only two API services?
+
+The APIs are only part of the cluster. Kubernetes also runs the UI, RabbitMQ,
+AWS integration controllers, networking components, secret controllers, and the
+monitoring stack. The current 25 Pods are:
+
+**Application — 4 Pods**
+
+- `devtools-ui`: serves the DevTools web interface;
+- `orders-api`: runs the Orders API;
+- `warehouse-api`: runs the Warehouse API;
+- `rabbitmq`: delivers messages between the application services.
+
+**DNS and secrets — 4 Pods**
+
+- `external-dns`: creates Route 53 records from Kubernetes Ingress hosts;
+- `external-secrets`: copies values from AWS Secrets Manager into Kubernetes
+  Secrets;
+- `external-secrets-cert-controller`: manages the internal TLS certificate used
+  by the External Secrets webhook; this is separate from ACM;
+- `external-secrets-webhook`: validates `ExternalSecret` and `SecretStore`
+  resources submitted to Kubernetes.
+
+**Core Kubernetes and AWS integration — 9 Pods**
+
+- one `aws-load-balancer-controller`: creates and configures the ALB from
+  Kubernetes Ingress resources;
+- two `aws-node`: one per node, providing AWS VPC networking and Pod IP
+  addresses;
+- two `coredns`: resolve private Kubernetes service names, with two replicas for
+  availability;
+- two `eks-pod-identity-agent`: one per node, supplying temporary AWS
+  credentials to authorized Pods;
+- two `kube-proxy`: one per node, routing Kubernetes Service traffic to Pods.
+
+**Monitoring — 8 Pods**
+
+- one `monitoring-grafana`: displays dashboards and traces; this Pod contains
+  Grafana and two provisioning sidecars;
+- one `monitoring-kube-prometheus-operator`: creates and configures Prometheus
+  resources from Kubernetes monitoring definitions;
+- one `monitoring-kube-state-metrics`: converts Kubernetes object state into
+  Prometheus metrics;
+- two `monitoring-prometheus-node-exporter`: one per node, reporting machine
+  CPU, memory, disk, and network metrics;
+- one `opentelemetry-collector`: receives application traces and forwards them
+  to Tempo;
+- one `prometheus-...-0`: stores metrics and contains a configuration-reloader
+  sidecar alongside Prometheus;
+- one `tempo-0`: stores application traces for Grafana.
+
+Grouped by responsibility:
+
+```text
+Application                 4
+External DNS                1
+External Secrets            3
+Core Kubernetes and AWS     9
+Monitoring                  8
+                           --
+                           25 Pods
+```
+
+Several components use a `DaemonSet`, which means Kubernetes creates one copy
+on every node. Adding the second node therefore added another `aws-node`, Pod
+Identity Agent, `kube-proxy`, and node exporter Pod.
+
+The `READY` value counts containers inside a Pod, not Pods. For example,
+`3/3` for Grafana means that one Grafana Pod has three ready containers.

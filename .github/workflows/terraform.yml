@@ -112,7 +112,8 @@ jobs:
           helmfile-version: v1.7.1
           helm-version: v3.21.3
           helm-plugins: https://github.com/databus23/helm-diff@v3.15.7
-          helmfile-args: destroy --skip-charts --delete-wait --delete-timeout 900
+          # Helmfile 1.x exposes these destroy-specific flags in camelCase.
+          helmfile-args: destroy --skip-charts --deleteWait --deleteTimeout 900
           helmfile-auto-init: "false"
 
       - name: Set up Terraform

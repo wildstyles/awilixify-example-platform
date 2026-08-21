@@ -17,6 +17,9 @@ repositories:
     url: https://open-telemetry.github.io/opentelemetry-helm-charts
 
 helmDefaults:
+  # Roll back failed upgrades and clean up failed first-time installs instead
+  # of leaving partial releases and admission webhooks in the cluster.
+  atomic: true
   wait: true
   timeout: 600
   historyMax: 5

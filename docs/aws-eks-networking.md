@@ -203,6 +203,36 @@ browser tab does not guarantee that the browser closes the connection; it may
 reuse an existing connection, or create a new one using faster TLS session
 resumption.
 
+### Does the cluster have its own internal TLS certificates?
+
+Yes. Kubernetes components can use private TLS certificates for internal HTTPS
+communication. For example, the Kubernetes API server calls the AWS Load
+Balancer Controller's admission webhook through this internal Service:
+
+```text
+Kubernetes API server
+  → HTTPS
+  → aws-load-balancer-webhook-service.kube-system.svc
+  → controller Pod
+```
+
+The controller's Helm chart generates a private certificate and stores it in a
+Kubernetes Secret. The webhook configuration contains its CA certificate, which
+lets the API server verify the controller. External Secrets and the Prometheus
+Operator use similar internal webhook certificates.
+
+This is completely separate from the public ACM certificate:
+
+```text
+ACM certificate             → browser trusts the public ALB for api.awilixify.site
+Internal webhook certificate → API server trusts a private *.svc webhook
+```
+
+Internal certificates do not use Route 53, the registered domain, or ACM. They
+are valid only for cluster-local service names. Not all Pod-to-Pod traffic uses
+TLS automatically; ordinary application Services may still communicate over
+HTTP unless TLS or a service mesh is configured.
+
 ### How do TCP, TLS, and HTTP work together?
 
 For HTTP/1.1 and HTTP/2 over HTTPS, they run in this order:
