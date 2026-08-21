@@ -25,8 +25,9 @@ resource "aws_eks_cluster" "this" {
   depends_on = [aws_iam_role_policy_attachment.cluster]
 }
 
-# A managed node group supplies EC2 compute for Pods. One t3.medium is enough
-# for this demo and keeps cost predictable; this is not highly available.
+# A managed node group supplies EC2 compute for Pods. Two t3.medium nodes provide
+# enough VPC-backed Pod slots for the application and monitoring stack. This is
+# still a disposable learning cluster rather than a highly available setup.
 resource "aws_eks_node_group" "learning" {
   cluster_name    = aws_eks_cluster.this.name
   node_group_name = "learning"
@@ -39,9 +40,9 @@ resource "aws_eks_node_group" "learning" {
   instance_types = ["t3.medium"]
 
   scaling_config {
-    desired_size = 1
-    min_size     = 1
-    max_size     = 1
+    desired_size = 2
+    min_size     = 2
+    max_size     = 2
   }
 
   update_config {
