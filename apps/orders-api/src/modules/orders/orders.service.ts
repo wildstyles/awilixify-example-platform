@@ -29,11 +29,13 @@ export class OrdersService {
 		private readonly pricingService: Deps["pricingService"],
 		private readonly warehouseApiClient: Deps["warehouseApiClient"],
 		private readonly warehouseMessagingClient: Deps["warehouseMessagingClient"],
+		private readonly logger: Deps["logger"],
 	) {}
 
 	getOrder(id: string): Order {
 		const order = this.orders.get(id);
 		if (!order) {
+			this.logger.warn({ order_id: id }, "Order not found");
 			throw new Error(`Order ${id} was not found`);
 		}
 
@@ -47,6 +49,14 @@ export class OrdersService {
 		this.customersService.getCustomer(input.customerId);
 		const quote = this.pricingService.priceLines(input.lines);
 		const orderId = `order-${this.nextOrderNumber++}`;
+		this.logger.debug(
+			{
+				customer_id: input.customerId,
+				line_count: input.lines.length,
+				order_id: orderId,
+			},
+			"Pricing and reserving order",
+		);
 
 		const reservation = await this.warehouseApiClient.createReservation({
 			orderId,
@@ -54,6 +64,10 @@ export class OrdersService {
 		});
 
 		if (reservation.status !== "reserved" || !reservation.id) {
+			this.logger.error(
+				{ order_id: orderId, reservation_status: reservation.status },
+				"Inventory reservation failed",
+			);
 			throw new Error(`Inventory reservation failed for order ${orderId}`);
 		}
 
@@ -67,6 +81,14 @@ export class OrdersService {
 			total: quote.total,
 		};
 		this.orders.set(order.id, order);
+		this.logger.info(
+			{
+				order_id: order.id,
+				reservation_id: reservation.id,
+				total: order.total,
+			},
+			"Order placed",
+		);
 
 		return order;
 	}
@@ -84,6 +106,10 @@ export class OrdersService {
 		// 	lines: input.lines,
 		// });
 		await this.warehouseMessagingClient.reserveInventory(input);
+		this.logger.info(
+			{ order_id: input.orderId },
+			"Inventory reservation queued",
+		);
 
 		return {
 			orderId: input.orderId,

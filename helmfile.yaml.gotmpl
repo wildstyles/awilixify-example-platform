@@ -87,6 +87,19 @@ releases:
           aws-zone-type: public
         triggerLoopOnEvent: true
 
+  - name: aws-for-fluent-bit
+    namespace: cloudwatch
+    createNamespace: true
+    chart: eks/aws-for-fluent-bit
+    version: 0.2.0
+    timeout: 600
+    needs:
+      - kube-system/aws-load-balancer-controller
+    labels:
+      tier: observability
+    values:
+      - monitoring/aws-for-fluent-bit-values.yaml
+
   - name: tempo
     namespace: monitoring
     createNamespace: true
@@ -122,6 +135,7 @@ releases:
       - external-secrets/external-secrets
       - kube-system/aws-load-balancer-controller
       - external-dns/external-dns
+      - cloudwatch/aws-for-fluent-bit
       - monitoring/opentelemetry-collector
     labels:
       tier: application

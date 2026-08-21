@@ -1,23 +1,9 @@
-import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import type { Static, TSchema } from "@sinclair/typebox";
 import type { RouteSchema } from "awilixify/http";
 import type {
-	FastifyInstance as DefaultFastifyInstance,
 	FastifyReply as DefaultFastifyReply,
-	FastifyBaseLogger,
 	FastifyRequest,
-	RawReplyDefaultExpression,
-	RawRequestDefaultExpression,
-	RawServerDefault,
 } from "fastify";
-
-export type FastifyInstance = DefaultFastifyInstance<
-	RawServerDefault,
-	RawRequestDefaultExpression<RawServerDefault>,
-	RawReplyDefaultExpression<RawServerDefault>,
-	FastifyBaseLogger,
-	TypeBoxTypeProvider
->;
 
 export type Reply = DefaultFastifyReply;
 

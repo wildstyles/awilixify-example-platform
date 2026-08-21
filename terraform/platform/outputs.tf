@@ -16,3 +16,8 @@ output "certificate_arn" {
   description = "Issued ACM certificate for the public application hosts."
   value       = aws_acm_certificate_validation.platform.certificate_arn
 }
+
+output "application_log_group_name" {
+  description = "Persistent CloudWatch log group populated by EKS Fluent Bit."
+  value       = aws_cloudwatch_log_group.application.name
+}

@@ -9,6 +9,7 @@ import type { Deps } from "./reservations.module.js";
 export class ReserveInventoryRabbitController {
 	constructor(
 		private readonly reservationsService: Deps["reservationsService"],
+		private readonly logger: Deps["logger"],
 	) {}
 
 	@onRabbitMessage(ReserveInventoryMessage, {
@@ -20,8 +21,9 @@ export class ReserveInventoryRabbitController {
 		const reservation =
 			await this.reservationsService.createReservation(payload);
 
-		console.log(
-			`Reserved inventory for order "${payload.orderId}" as "${reservation.id}"`,
+		this.logger.info(
+			{ order_id: payload.orderId, reservation_id: reservation.id },
+			"Inventory reserved",
 		);
 	}
 }

@@ -61,6 +61,11 @@ grafana:
     enabled: false
   service:
     type: ClusterIP
+  serviceAccount:
+    # Terraform associates this exact account with Grafana's read-only
+    # CloudWatch Pod Identity role.
+    create: true
+    name: monitoring-grafana
   admin:
     # External Secrets Operator creates this Kubernetes Secret from the
     # persistent Grafana credential stored in AWS Secrets Manager.
@@ -70,6 +75,13 @@ grafana:
   persistence:
     enabled: false
   additionalDataSources:
+    - name: CloudWatch
+      type: cloudwatch
+      uid: cloudwatch
+      access: proxy
+      jsonData:
+        authType: default
+        defaultRegion: eu-west-1
     - name: Tempo
       type: tempo
       uid: tempo

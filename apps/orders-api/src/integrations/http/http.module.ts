@@ -7,12 +7,11 @@ import { ConfigModule } from "../config/config.module.js";
 import { FastifyService } from "./fastify.service.js";
 import { FastifyHttpInitializer } from "./fastify-http.initializer.js";
 import { initializeFastify } from "./initialize-fastify.js";
-import type { FastifyInstance } from "./types.js";
 
 export type HttpModuleDef = ModuleDef<{
 	imports: [typeof ConfigModule];
 	providers: {
-		app: FastifyInstance;
+		app: ReturnType<typeof initializeFastify>;
 		fastifyService: FastifyService;
 	};
 	initializers: {
@@ -30,6 +29,7 @@ export const HttpModule = createModule<HttpModuleDef>({
 	providers: {
 		app: {
 			eager: true,
+			inject: ["logger"],
 			useFactory: initializeFastify,
 		},
 		fastifyService: {

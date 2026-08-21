@@ -35,6 +35,11 @@ observability:
   otlpTracesEndpoint: http://opentelemetry-collector.monitoring.svc.cluster.local:4318/v1/traces
   traceSampleRatio: "1.0"
 
+logging:
+  # Debug is intentional for the first CloudWatch exercise. Use info for a
+  # quieter production-like deployment after checking structured log levels.
+  level: debug
+
 ordersApi:
   replicas: 1
   image:

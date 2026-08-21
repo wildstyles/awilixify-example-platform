@@ -18,12 +18,12 @@
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
+		"@awilixify-example-platform/logger": "workspace:*",
 		"@awilixify-example-platform/observability": "workspace:*",
 		"@awilixify-example-platform/rabbitmq": "workspace:*",
 		"@awilixify/devtools": "^0.2.3",
 		"@fastify/swagger": "^9.7.0",
 		"@fastify/swagger-ui": "^6.0.0",
-		"@fastify/type-provider-typebox": "^5.0.0",
 		"@sinclair/typebox": "^0.34.49",
 		"awilix": "^12.0.5",
 		"awilixify": "^3.2.1",

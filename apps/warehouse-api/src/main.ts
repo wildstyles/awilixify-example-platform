@@ -1,4 +1,5 @@
 import { DevtoolsModule } from "@awilixify/devtools";
+import { createLogger, LoggerModule } from "@awilixify-example-platform/logger";
 import { DIContext } from "awilixify";
 
 import { AppModule } from "./app.module.js";
@@ -11,9 +12,11 @@ const shutdownTimeoutMs = Number.parseInt(
 const traceOptions = {
 	traceExcludePaths: ["/health/live", "/health/ready"],
 };
+const logger = createLogger({ serviceName: "warehouse" });
 
 const app = DIContext.create(AppModule, {
 	globalModules: [
+		LoggerModule({ logger }),
 		DevtoolsModule({
 			...traceOptions,
 			appUrl: process.env.PUBLIC_APP_URL ?? "http://127.0.0.1:3001",
@@ -38,15 +41,15 @@ let shutdown: Promise<void> | undefined;
 const handleSignal = (signal: NodeJS.Signals) => {
 	if (shutdown) return;
 
-	console.info(`Received ${signal}; shutting down`);
+	logger.info({ signal }, "Shutting down");
 	const timer = setTimeout(() => {
-		console.error(`Shutdown exceeded ${shutdownTimeoutMs}ms`);
+		logger.error({ timeout_ms: shutdownTimeoutMs }, "Shutdown timed out");
 		process.exit(1);
 	}, shutdownTimeoutMs);
 
 	shutdown = app.dispose().finally(() => clearTimeout(timer));
 	void shutdown.catch((error: unknown) => {
-		console.error("Graceful shutdown failed", error);
+		logger.error({ err: error }, "Graceful shutdown failed");
 		process.exitCode = 1;
 	});
 };

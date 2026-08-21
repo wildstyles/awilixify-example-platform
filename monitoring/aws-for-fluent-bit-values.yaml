@@ -1,0 +1,31 @@
+serviceAccount:
+  # Terraform associates this exact account with the log-writer Pod Identity.
+  name: aws-for-fluent-bit
+
+filter:
+  # Parse each application's Pino JSON into searchable structured fields and
+  # omit the duplicate unparsed `log` field.
+  mergeLog: "On"
+  mergeLogKey: data
+  keepLog: "Off"
+  extraFilters: |
+    # Store application logs without paying to ingest every Kubernetes
+    # controller and system Pod log in this learning environment.
+    [FILTER]
+        Name   grep
+        Match  kube.*
+        Regex  $kubernetes['namespace_name'] ^awilixify-example-platform$
+
+cloudWatchLogs:
+  enabled: true
+  region: eu-west-1
+  logGroupName: /aws/eks/awilixify-example-platform/application
+  logStreamTemplate: "$kubernetes['namespace_name'].$kubernetes['pod_name'].$kubernetes['container_name']"
+  # Terraform owns retention and lifecycle for the persistent group.
+  autoCreateGroup: false
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL

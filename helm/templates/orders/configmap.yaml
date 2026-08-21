@@ -8,6 +8,8 @@ data:
   NODE_ENV: production
   DEPLOYMENT_ENVIRONMENT: {{ .Values.ordersApi.config.deploymentEnvironment | quote }}
   SERVICE_NAME: {{ .Values.ordersApi.config.serviceName | quote }}
+  IMAGE_VERSION: {{ .Values.global.image.tag | quote }}
+  LOG_LEVEL: {{ .Values.logging.level | quote }}
   {{- if .Values.observability.enabled }}
   OTEL_SERVICE_NAME: {{ .Values.ordersApi.config.serviceName | quote }}
   OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: {{ .Values.observability.otlpTracesEndpoint | quote }}

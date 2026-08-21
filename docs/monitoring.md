@@ -161,11 +161,52 @@ learning environment.
 Grafana changes are also ephemeral. Grafana itself does not become another copy
 of the Tempo or Prometheus data.
 
-### Why are there 25 Pods when the platform has only two API services?
+### How would CloudWatch collect and show application logs?
+
+Applications write Pino JSON to standard output and do not call CloudWatch
+directly. One Fluent Bit `DaemonSet` Pod per node reads the container log files,
+keeps logs from the application namespace, adds Kubernetes metadata, and pushes
+batches to CloudWatch Logs:
+
+```text
+Pod stdout/stderr → node log files → agent Pod → CloudWatch Logs
+```
+
+CloudWatch stores the logs outside the disposable EKS cluster, so they can
+survive Pod, node, and cluster deletion. Terraform sets seven-day retention.
+They can be queried in the AWS console or through Grafana's provisioned
+CloudWatch data source. Grafana remains the UI; CloudWatch is the managed log
+storage and query backend, so Loki is not required.
+
+Pino records an explicitly configured `service` and a textual `level`. When
+OpenTelemetry has an active HTTP or RabbitMQ span, it also adds the same
+`trace_id` and `span_id` used by Tempo. These fields are searchable labels,
+which are more useful than a text prefix such as `[orders]`. For example,
+Grafana Explore can run this CloudWatch Logs Insights query:
+
+```text
+fields @timestamp, data.service, data.level, data.msg, data.trace_id
+| filter data.level in ["warn", "error"]
+| sort @timestamp desc
+```
+
+Copying a `trace_id` from a Tempo trace into a log query shows the related logs
+across both services. The initial EKS values enable `debug` so all four levels
+can be explored; switch `logging.level` to `info` afterward to reduce noise and
+CloudWatch ingestion cost.
+
+CloudWatch is usually simpler for an AWS-only platform because AWS operates the
+backend, but ingestion, retention, and log queries are billed and the solution
+is AWS-specific. Loki provides a more native Grafana experience, avoids cloud
+vendor lock-in, and can be cheaper at high log volume when backed by object
+storage.
+
+### Why are there about 27 Pods when the platform has only two API services?
 
 The APIs are only part of the cluster. Kubernetes also runs the UI, RabbitMQ,
 AWS integration controllers, networking components, secret controllers, and the
-monitoring stack. The current 25 Pods are:
+monitoring stack. The exact count changes during rollouts; the current
+components normally produce about 27 Pods:
 
 **Application — 4 Pods**
 
@@ -212,6 +253,11 @@ monitoring stack. The current 25 Pods are:
   sidecar alongside Prometheus;
 - one `tempo-0`: stores application traces for Grafana.
 
+**Logging — 2 Pods**
+
+- two `aws-for-fluent-bit`: one per node, forwarding application container logs
+  to the persistent CloudWatch log group.
+
 Grouped by responsibility:
 
 ```text
@@ -220,13 +266,14 @@ External DNS                1
 External Secrets            3
 Core Kubernetes and AWS     9
 Monitoring                  8
+Logging                     2
                            --
-                           25 Pods
+                           27 Pods
 ```
 
 Several components use a `DaemonSet`, which means Kubernetes creates one copy
 on every node. Adding the second node therefore added another `aws-node`, Pod
-Identity Agent, `kube-proxy`, and node exporter Pod.
+Identity Agent, `kube-proxy`, node exporter, and Fluent Bit Pod.
 
 The `READY` value counts containers inside a Pod, not Pods. For example,
 `3/3` for Grafana means that one Grafana Pod has three ready containers.

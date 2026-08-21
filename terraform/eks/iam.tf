@@ -61,7 +61,7 @@ resource "aws_iam_role_policy_attachment" "node" {
 
 # EKS Pod Identity lets the External Secrets controller receive temporary AWS
 # credentials without access keys stored in Kubernetes.
-data "aws_iam_policy_document" "external_secrets_assume_role" {
+data "aws_iam_policy_document" "pod_identity_assume_role" {
   statement {
     actions = ["sts:AssumeRole", "sts:TagSession"]
 
@@ -74,7 +74,7 @@ data "aws_iam_policy_document" "external_secrets_assume_role" {
 
 resource "aws_iam_role" "external_secrets" {
   name               = "${local.project}-external-secrets"
-  assume_role_policy = data.aws_iam_policy_document.external_secrets_assume_role.json
+  assume_role_policy = data.aws_iam_policy_document.pod_identity_assume_role.json
 }
 
 # Look up the long-lived secrets created by terraform/platform.

@@ -40,6 +40,15 @@ const RawEnvConfigSchema = Type.Object({
 	HTTP_HOST: Type.String({ default: "0.0.0.0", minLength: 1 }),
 	HTTP_PORT: Type.Integer({ default: 3000, maximum: 65_535, minimum: 1 }),
 	IMAGE_VERSION: Type.String({ default: "development", minLength: 1 }),
+	LOG_LEVEL: Type.Union(
+		[
+			Type.Literal("debug"),
+			Type.Literal("info"),
+			Type.Literal("warn"),
+			Type.Literal("error"),
+		],
+		{ default: "info" },
+	),
 	NODE_ENV: Type.Union(
 		[
 			Type.Literal("development"),
@@ -86,6 +95,7 @@ export type AppConfig = {
 	httpHost: string;
 	httpPort: number;
 	imageVersion: string;
+	logLevel: RawEnvConfig["LOG_LEVEL"];
 	nodeEnvironment: RawEnvConfig["NODE_ENV"];
 	publicAppUrl: string;
 	rabbitMqHost: string;
@@ -142,6 +152,7 @@ export class ConfigService {
 			httpHost: raw.HTTP_HOST,
 			httpPort: raw.HTTP_PORT,
 			imageVersion: raw.IMAGE_VERSION,
+			logLevel: raw.LOG_LEVEL,
 			nodeEnvironment: raw.NODE_ENV,
 			publicAppUrl: raw.PUBLIC_APP_URL,
 			rabbitMqHost: raw.RABBITMQ_HOST,

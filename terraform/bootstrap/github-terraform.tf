@@ -110,6 +110,27 @@ data "aws_iam_policy_document" "github_terraform" {
     resources = ["arn:aws:secretsmanager:eu-west-1:${data.aws_caller_identity.current.account_id}:secret:${local.project}/grafana-*"]
   }
 
+  # The persistent platform stack owns one application log group. Creation and
+  # discovery APIs cannot be scoped to an ARN that does not exist yet.
+  statement {
+    actions = [
+      "logs:CreateLogGroup",
+      "logs:DescribeLogGroups",
+    ]
+    resources = ["*"]
+  }
+
+  statement {
+    actions = [
+      "logs:DeleteLogGroup",
+      "logs:ListTagsForResource",
+      "logs:PutRetentionPolicy",
+      "logs:TagResource",
+      "logs:UntagResource",
+    ]
+    resources = ["arn:aws:logs:eu-west-1:${data.aws_caller_identity.current.account_id}:log-group:/aws/eks/${local.project}/application"]
+  }
+
   # Route 53 will host DNS for the externally registered learning domain. These
   # permissions let the persistent platform stack create its hosted zone and,
   # in the next stage, manage DNS records used by ACM and the application.

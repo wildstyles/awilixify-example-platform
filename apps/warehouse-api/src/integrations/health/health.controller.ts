@@ -4,9 +4,12 @@ import type { Reply } from "../http/types.js";
 import type { Deps } from "./health.module.js";
 
 export class HealthController {
+	private wasReady: boolean | undefined;
+
 	constructor(
 		private readonly config: Deps["config"],
 		private readonly rabbitMqRegistry: Deps["rabbitMqRegistry"],
+		private readonly logger: Deps["logger"],
 	) {}
 
 	@GET("/health/live")
@@ -17,11 +20,21 @@ export class HealthController {
 	@GET("/health/ready")
 	readiness(_request: unknown, reply: Reply) {
 		if (this.rabbitMqRegistry.isConnected()) {
+			if (this.wasReady === false) {
+				this.logger.info("Service readiness recovered");
+			}
+			this.wasReady = true;
+
 			return {
 				dependencies: { rabbitmq: "ready" },
 				status: "ready" as const,
 			};
 		}
+
+		if (this.wasReady !== false) {
+			this.logger.warn({ dependency: "rabbitmq" }, "Service is not ready");
+		}
+		this.wasReady = false;
 
 		return reply.status(503).send({
 			dependencies: { rabbitmq: "not-ready" },
