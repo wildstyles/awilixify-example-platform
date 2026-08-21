@@ -8,6 +8,13 @@ data:
   NODE_ENV: production
   DEPLOYMENT_ENVIRONMENT: {{ .Values.ordersApi.config.deploymentEnvironment | quote }}
   SERVICE_NAME: {{ .Values.ordersApi.config.serviceName | quote }}
+  {{- if .Values.observability.enabled }}
+  OTEL_SERVICE_NAME: {{ .Values.ordersApi.config.serviceName | quote }}
+  OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: {{ .Values.observability.otlpTracesEndpoint | quote }}
+  OTEL_TRACES_SAMPLER: parentbased_traceidratio
+  OTEL_TRACES_SAMPLER_ARG: {{ .Values.observability.traceSampleRatio | quote }}
+  OTEL_RESOURCE_ATTRIBUTES: {{ printf "deployment.environment.name=%s,service.version=%s" .Values.ordersApi.config.deploymentEnvironment .Values.global.image.tag | quote }}
+  {{- end }}
   HTTP_PORT: {{ .Values.ordersApi.service.httpPort | quote }}
   DEVTOOLS_PORT: {{ .Values.ordersApi.service.devtoolsPort | quote }}
   PUBLIC_APP_URL: {{ .Values.ordersApi.config.publicAppUrl | quote }}

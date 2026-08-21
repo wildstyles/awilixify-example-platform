@@ -11,6 +11,10 @@ repositories:
     url: https://kubernetes-sigs.github.io/external-dns/
   - name: prometheus-community
     url: https://prometheus-community.github.io/helm-charts
+  - name: grafana
+    url: https://grafana.github.io/helm-charts
+  - name: open-telemetry
+    url: https://open-telemetry.github.io/opentelemetry-helm-charts
 
 helmDefaults:
   wait: true
@@ -71,6 +75,30 @@ releases:
           aws-zone-type: public
         triggerLoopOnEvent: true
 
+  - name: tempo
+    namespace: monitoring
+    createNamespace: true
+    chart: grafana/tempo
+    version: 1.24.4
+    timeout: 600
+    labels:
+      tier: observability
+    values:
+      - monitoring/tempo-values.yaml
+
+  - name: opentelemetry-collector
+    namespace: monitoring
+    createNamespace: true
+    chart: open-telemetry/opentelemetry-collector
+    version: 0.170.0
+    timeout: 600
+    needs:
+      - monitoring/tempo
+    labels:
+      tier: observability
+    values:
+      - monitoring/opentelemetry-collector-values.yaml
+
   - name: awilixify-example-platform
     namespace: awilixify-example-platform
     createNamespace: true
@@ -80,6 +108,7 @@ releases:
       - external-secrets/external-secrets
       - kube-system/aws-load-balancer-controller
       - external-dns/external-dns
+      - monitoring/opentelemetry-collector
     labels:
       tier: application
     values:
@@ -100,9 +129,9 @@ releases:
     version: 88.5.0
     timeout: 900
     needs:
-      - awilixify-example-platform/awilixify-example-platform
       # The chart's extra manifests use CRDs installed by this controller.
       - external-secrets/external-secrets
+      - monitoring/tempo
     labels:
       tier: observability
     values:

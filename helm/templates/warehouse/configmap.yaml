@@ -8,6 +8,13 @@ data:
   NODE_ENV: production
   DEPLOYMENT_ENVIRONMENT: {{ .Values.warehouseApi.config.deploymentEnvironment | quote }}
   SERVICE_NAME: {{ .Values.warehouseApi.config.serviceName | quote }}
+  {{- if .Values.observability.enabled }}
+  OTEL_SERVICE_NAME: {{ .Values.warehouseApi.config.serviceName | quote }}
+  OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: {{ .Values.observability.otlpTracesEndpoint | quote }}
+  OTEL_TRACES_SAMPLER: parentbased_traceidratio
+  OTEL_TRACES_SAMPLER_ARG: {{ .Values.observability.traceSampleRatio | quote }}
+  OTEL_RESOURCE_ATTRIBUTES: {{ printf "deployment.environment.name=%s,service.version=%s" .Values.warehouseApi.config.deploymentEnvironment .Values.global.image.tag | quote }}
+  {{- end }}
   HTTP_PORT: {{ .Values.warehouseApi.service.httpPort | quote }}
   DEVTOOLS_PORT: {{ .Values.warehouseApi.service.devtoolsPort | quote }}
   PUBLIC_APP_URL: {{ .Values.warehouseApi.config.publicAppUrl | quote }}

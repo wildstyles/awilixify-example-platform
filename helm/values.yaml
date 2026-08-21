@@ -24,6 +24,17 @@ ingress:
     # Plain HTTP requests are redirected to the TLS listener above.
     alb.ingress.kubernetes.io/ssl-redirect: "443"
 
+observability:
+  # The applications export traces privately to the in-cluster OpenTelemetry
+  # Collector. values.local.yaml disables this because Minikube does not install
+  # the monitoring Helmfile releases.
+  enabled: true
+  # OpenTelemetry code inside each application Pod sends batched trace data via
+  # OTLP/HTTP to this private Kubernetes Service; the Collector then forwards it
+  # to Tempo. This endpoint is not used for normal application requests.
+  otlpTracesEndpoint: http://opentelemetry-collector.monitoring.svc.cluster.local:4318/v1/traces
+  traceSampleRatio: "1.0"
+
 ordersApi:
   replicas: 1
   image:

@@ -10,10 +10,11 @@
 		"dev": "tsx watch src/main.ts",
 		"lint": "biome check src",
 		"lint:fix": "biome check --write src",
-		"start": "node --enable-source-maps dist/main.js",
+		"start": "node --enable-source-maps --import @awilixify-example-platform/observability/register dist/main.js",
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
+		"@awilixify-example-platform/observability": "workspace:*",
 		"@awilixify-example-platform/rabbitmq": "workspace:*",
 		"@awilixify/devtools": "^0.2.3",
 		"@fastify/swagger": "^9.7.0",

@@ -6,6 +6,9 @@ ordersApi:
 ingress:
   enabled: false
 
+observability:
+  enabled: false
+
 warehouseApi:
   config:
     deploymentEnvironment: local-kubernetes

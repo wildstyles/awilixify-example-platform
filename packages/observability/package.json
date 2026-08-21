@@ -1,0 +1,32 @@
+{
+	"name": "@awilixify-example-platform/observability",
+	"private": true,
+	"type": "module",
+	"files": [
+		"dist"
+	],
+	"exports": {
+		"./register": {
+			"types": "./src/register.ts",
+			"default": "./dist/register.js"
+		}
+	},
+	"scripts": {
+		"build": "tsc -p tsconfig.build.json",
+		"lint": "biome check src",
+		"lint:fix": "biome check --write src",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@fastify/otel": "0.20.1",
+		"@opentelemetry/api": "1.9.1",
+		"@opentelemetry/exporter-trace-otlp-http": "0.221.0",
+		"@opentelemetry/instrumentation-amqplib": "0.68.0",
+		"@opentelemetry/instrumentation-http": "0.221.0",
+		"@opentelemetry/instrumentation-undici": "0.31.0",
+		"@opentelemetry/sdk-node": "0.221.0"
+	},
+	"devDependencies": {
+		"@types/node": "^22.15.21"
+	}
+}

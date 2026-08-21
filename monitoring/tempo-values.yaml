@@ -1,0 +1,46 @@
+# Single-binary Tempo is intentionally ephemeral and small for the disposable
+# one-node learning cluster. It stores traces on node-local emptyDir storage.
+replicas: 1
+
+tempo:
+  reportingEnabled: false
+  memBallastSizeMbs: 0
+  retention: 6h
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  metricsGenerator:
+    enabled: true
+    remoteWriteUrl: http://monitoring-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090/api/v1/write
+    processor:
+      service_graphs:
+        wait: 10s
+        max_items: 1000
+      span_metrics:
+        enable_target_info: true
+        dimensions:
+          - http.route
+          - http.request.method
+          - http.response.status_code
+          - messaging.destination.name
+          - messaging.rabbitmq.destination.routing_key
+          - messaging.rabbitmq.routing_key
+    registry:
+      collection_interval: 15s
+      stale_duration: 5m
+  overrides:
+    defaults:
+      metrics_generator:
+        processors:
+          - service-graphs
+          - span-metrics
+
+persistence:
+  enabled: false
+
+serviceMonitor:
+  enabled: false

@@ -69,6 +69,25 @@ grafana:
     passwordKey: admin-password
   persistence:
     enabled: false
+  additionalDataSources:
+    - name: Tempo
+      type: tempo
+      uid: tempo
+      access: proxy
+      url: http://tempo.monitoring.svc.cluster.local:3200
+      jsonData:
+        httpMethod: GET
+        nodeGraph:
+          enabled: true
+        serviceMap:
+          datasourceUid: prometheus
+        tracesToMetrics:
+          datasourceUid: prometheus
+          spanStartTimeShift: -2m
+          spanEndTimeShift: 2m
+          tags:
+            - key: service.name
+              value: service
   resources:
     requests:
       cpu: 100m
@@ -96,6 +115,9 @@ prometheus:
     evaluationInterval: 30s
     walCompression: true
     enableAdminAPI: false
+    # Tempo's metrics generator writes trace-derived RED and service-graph
+    # metrics into this private Prometheus endpoint.
+    enableRemoteWriteReceiver: true
     resources:
       requests:
         cpu: 200m

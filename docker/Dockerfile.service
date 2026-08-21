@@ -61,4 +61,4 @@ COPY --chown=node:node --from=builder /app/deploy .
 # compromise by preventing the process from operating as root.
 USER node
 
-CMD ["node", "--enable-source-maps", "dist/main.js"]
+CMD ["node", "--enable-source-maps", "--import", "@awilixify-example-platform/observability/register", "dist/main.js"]

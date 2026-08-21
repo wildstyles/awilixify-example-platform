@@ -23,9 +23,9 @@
 
 - [x] Verify the first live EKS deployment and public HTTPS endpoints
 - [x] Add Prometheus and Grafana monitoring
+- [x] Add OpenTelemetry HTTP and RabbitMQ tracing with Collector and Tempo
 - [ ] Add dashboards and alerts for Kubernetes, applications, and RabbitMQ
 - [ ] Send structured container logs to Amazon CloudWatch Logs
-- [ ] Add request correlation and OpenTelemetry tracing
 - [ ] Test manual Helm rollback and add automatic rollback on failure
 - [ ] Deploy images by digest and record deployment provenance
 - [ ] Test HPA, Pod replacement, node failure, CPU limits, and OOM recovery
