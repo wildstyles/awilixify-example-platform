@@ -48,6 +48,11 @@ releases:
         region: {{ requiredEnv "AWS_REGION" | quote }}
         vpcId: {{ requiredEnv "VPC_ID" | quote }}
         replicaCount: 1
+        # Reuse the webhook certificate across Helm upgrades. Otherwise the
+        # chart rotates its CA while the existing controller Pod can continue
+        # serving the previous certificate, temporarily blocking Kubernetes
+        # API operations that invoke the admission webhook.
+        keepTLSSecret: true
         serviceAccount:
           name: aws-load-balancer-controller
 
