@@ -8,13 +8,14 @@ filter:
   mergeLog: "On"
   mergeLogKey: data
   keepLog: "Off"
-  extraFilters: |
-    # Store application logs without paying to ingest every Kubernetes
-    # controller and system Pod log in this learning environment.
-    [FILTER]
-        Name   grep
-        Match  kube.*
-        Regex  $kubernetes['namespace_name'] ^awilixify-example-platform$
+
+# Store application logs without paying to ingest every Kubernetes controller
+# and system Pod log in this learning environment.
+additionalFilters: |
+  [FILTER]
+      Name   grep
+      Match  kube.*
+      Regex  $kubernetes['namespace_name'] ^awilixify-example-platform$
 
 cloudWatchLogs:
   enabled: true
