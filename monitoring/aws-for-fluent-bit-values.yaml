@@ -9,13 +9,15 @@ filter:
   mergeLogKey: data
   keepLog: "Off"
 
-# Store application logs without paying to ingest every Kubernetes controller
-# and system Pod log in this learning environment.
+# Store only the two application API logs. DevTools UI, RabbitMQ, controllers,
+# and system Pods are intentionally excluded before CloudWatch ingestion.
 additionalFilters: |
   [FILTER]
-      Name   grep
-      Match  kube.*
-      Regex  $kubernetes['namespace_name'] ^awilixify-example-platform$
+      Name        grep
+      Match       kube.*
+      Logical_Op  AND
+      Regex       $kubernetes['namespace_name'] ^awilixify-example-platform$
+      Regex       $kubernetes['container_name'] ^(orders-api|warehouse-api)$
 
 cloudWatchLogs:
   enabled: true
