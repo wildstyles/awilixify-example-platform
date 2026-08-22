@@ -10,6 +10,7 @@
 		"generate": "turbo run generate",
 		"lint": "turbo run lint",
 		"lint:fix": "turbo run lint:fix",
+		"load:test": "k6 run scripts/load-test.js",
 		"typecheck": "turbo run typecheck"
 	},
 	"devDependencies": {

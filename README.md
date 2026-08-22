@@ -85,6 +85,19 @@ pnpm --filter @awilixify-example-platform/orders-api dev
 pnpm --filter @awilixify-example-platform/warehouse-api dev
 ```
 
+Run a one-minute load test against the deployed Orders API to produce metrics,
+traces, and logs for the monitoring dashboards (requires `k6`):
+
+```sh
+pnpm load:test
+```
+
+Override the target or load when needed:
+
+```sh
+API_URL=http://localhost:3000 ORDER_ID=order-1001 VUS=5 DURATION=30s pnpm load:test
+```
+
 Regenerate all workspace contracts while their source APIs are running:
 
 ```sh

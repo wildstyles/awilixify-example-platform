@@ -165,8 +165,9 @@ of the Tempo or Prometheus data.
 
 Applications write Pino JSON to standard output and do not call CloudWatch
 directly. One Fluent Bit `DaemonSet` Pod per node reads the container log files,
-keeps logs from the application namespace, adds Kubernetes metadata, and pushes
-batches to CloudWatch Logs:
+keeps only the Orders and Warehouse API logs, adds Kubernetes metadata, and
+pushes batches to CloudWatch Logs. DevTools UI, RabbitMQ, controller, and system
+logs are discarded before ingestion:
 
 ```text
 Pod stdout/stderr → node log files → agent Pod → CloudWatch Logs
@@ -277,3 +278,73 @@ Identity Agent, `kube-proxy`, node exporter, and Fluent Bit Pod.
 
 The `READY` value counts containers inside a Pod, not Pods. For example,
 `3/3` for Grafana means that one Grafana Pod has three ready containers.
+
+## Learning checklist
+
+### Grafana and metrics
+
+- [x] Open the built-in Kubernetes dashboards.
+- [x] Find CPU and memory usage by cluster, node, namespace, and Pod.
+- [x] Compare actual usage with Kubernetes requests and limits.
+
+### OpenTelemetry and tracing
+
+- [ ] Send a request and find its trace in Grafana Tempo.
+- [ ] Follow the trace from Orders through RabbitMQ to Warehouse.
+- [ ] Understand trace IDs, parent spans, child spans, and span duration.
+- [ ] Find the slowest operation in a trace.
+- [ ] Verify inbound HTTP, outbound HTTP, and RabbitMQ instrumentation.
+- [ ] Generate Prometheus request-rate, error-rate, and latency metrics from
+      spans.
+
+### Dashboards and alerts
+
+- [ ] Create CPU and memory alerts based on Pod limits.
+- [ ] Alert on Pod restarts and unavailable replicas.
+- [ ] Alert on a sustained application error rate.
+- [ ] Alert when p95 response latency stays above seven seconds.
+- [ ] Configure Alertmanager delivery to Slack, email, or another receiver.
+- [ ] Trigger each alert deliberately and verify both firing and recovery
+      notifications.
+
+### Failure exercises
+
+- [ ] Delete an application Pod and watch Kubernetes replace it.
+- [ ] Temporarily stop Warehouse and inspect the resulting metrics, traces, and
+      logs.
+- [ ] Introduce a controlled slow operation and observe its latency.
+- [ ] Increase load until CPU or memory limits become visible.
+- [ ] Compare behavior before and after increasing the replica count.
+- [ ] Restart RabbitMQ and inspect messaging failures and recovery.
+
+## Core production signals
+
+Most production applications observe the same core categories. The exact
+thresholds depend on the service, but the signals are broadly reusable:
+
+- **Traffic:** requests per second, jobs processed, messages published and
+  consumed, and active users.
+- **Latency:** average and p50/p95/p99 response time, slow endpoints, background
+  job duration, and end-to-end operation time.
+- **Errors:** HTTP 5xx and 4xx rates, exceptions, failed jobs, rejected messages,
+  retries, and timeouts.
+- **Saturation:** CPU usage and throttling, memory usage and OOM kills, disk
+  capacity and I/O, network usage, thread or event-loop delay, and queue depth.
+- **Availability:** successful health checks, ready replicas, Pod restarts,
+  deployment health, and externally measured uptime.
+- **Databases:** query latency, slow-query count, connection-pool usage, failed
+  queries, deadlocks, replication lag, storage, and CPU.
+- **Messaging:** queue depth, oldest-message age, consumer lag, publish and
+  consume failures, redeliveries, and dead-letter messages.
+- **External dependencies:** downstream latency, error rate, timeouts, retries,
+  and circuit-breaker state for every important API or managed service.
+- **Runtime:** Node.js event-loop delay, heap usage, garbage-collection pauses,
+  process CPU, process memory, and crashes.
+- **Logs and traces:** structured logs with service, level, and trace ID, plus
+  distributed traces that identify where slow or failed operations spent time.
+- **Business outcomes:** orders placed, payments completed, reservations
+  confirmed, and other domain-specific success or failure counters.
+
+A useful starting model is the four golden signals: **traffic, latency, errors,
+and saturation**. CPU alone says that a machine is busy; combining these signals
+shows whether that work is affecting users and where the bottleneck is.

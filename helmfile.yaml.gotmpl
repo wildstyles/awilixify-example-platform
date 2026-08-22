@@ -164,3 +164,8 @@ releases:
       tier: observability
     values:
       - monitoring/kube-prometheus-stack-values.yaml
+    # Store custom dashboards in Git and provision them again with every
+    # monitoring install, including after the EKS cluster is recreated.
+    set:
+      - name: grafana.dashboards.default.application-rpc.json
+        file: monitoring/dashboards/application-rpc.json

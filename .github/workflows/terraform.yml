@@ -93,8 +93,14 @@ jobs:
             exit 0
           fi
 
+          vpc_id="$(aws eks describe-cluster \
+            --region "${AWS_REGION}" \
+            --name "${CLUSTER_NAME}" \
+            --query 'cluster.resourcesVpcConfig.vpcId' \
+            --output text)"
           aws eks update-kubeconfig --region "${AWS_REGION}" --name "${CLUSTER_NAME}"
           echo "cluster_exists=true" >> "${GITHUB_OUTPUT}"
+          echo "vpc_id=${vpc_id}" >> "${GITHUB_OUTPUT}"
 
       - name: Remove Kubernetes-managed AWS resources
         if: >-
@@ -107,7 +113,7 @@ jobs:
           # placeholders only; destroy never installs or upgrades the charts.
           IMAGE_TAG: destroy
           ECR_REGISTRY: unused
-          VPC_ID: unused
+          VPC_ID: ${{ steps.eks_cleanup.outputs.vpc_id }}
         with:
           helmfile-version: v1.7.1
           helm-version: v3.21.3
@@ -115,6 +121,47 @@ jobs:
           # Helmfile 1.x exposes these destroy-specific flags in camelCase.
           helmfile-args: destroy --skip-charts --deleteWait --deleteTimeout 900
           helmfile-auto-init: "false"
+
+      # The load-balancer controller creates frontend and shared backend
+      # security groups directly in AWS, outside both Helm and Terraform state.
+      # Usually its Ingress finalizer removes them. During full-cluster teardown,
+      # AWS propagation or stopping the controller can leave an unattached group
+      # briefly behind, which prevents Terraform from deleting the VPC.
+      - name: Remove orphaned load-balancer security groups
+        if: >-
+          inputs.stack == 'eks' &&
+          inputs.operation == 'destroy' &&
+          steps.eks_cleanup.outputs.cluster_exists == 'true'
+        env:
+          VPC_ID: ${{ steps.eks_cleanup.outputs.vpc_id }}
+        shell: bash
+        run: |
+          for attempt in {1..60}; do
+            group_ids="$(aws ec2 describe-security-groups \
+              --region "${AWS_REGION}" \
+              --filters \
+                "Name=vpc-id,Values=${VPC_ID}" \
+                "Name=tag:elbv2.k8s.aws/cluster,Values=${CLUSTER_NAME}" \
+              --query 'SecurityGroups[].GroupId' \
+              --output text)"
+
+            if [[ -z "${group_ids}" || "${group_ids}" == "None" ]]; then
+              echo "No load-balancer controller security groups remain."
+              exit 0
+            fi
+
+            echo "Waiting for AWS dependencies, then deleting: ${group_ids}"
+            for group_id in ${group_ids}; do
+              aws ec2 delete-security-group \
+                --region "${AWS_REGION}" \
+                --group-id "${group_id}" || true
+            done
+
+            sleep 10
+          done
+
+          echo "Load-balancer security groups still exist after 10 minutes." >&2
+          exit 1
 
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v4.0.1
