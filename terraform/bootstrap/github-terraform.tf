@@ -116,6 +116,9 @@ data "aws_iam_policy_document" "github_terraform" {
     actions = [
       "logs:CreateLogGroup",
       "logs:DescribeLogGroups",
+      # CreateLogGroup includes Terraform's default tags in the same request.
+      # AWS therefore checks TagResource before the log-group ARN exists.
+      "logs:TagResource",
     ]
     resources = ["*"]
   }
@@ -125,7 +128,6 @@ data "aws_iam_policy_document" "github_terraform" {
       "logs:DeleteLogGroup",
       "logs:ListTagsForResource",
       "logs:PutRetentionPolicy",
-      "logs:TagResource",
       "logs:UntagResource",
     ]
     resources = ["arn:aws:logs:eu-west-1:${data.aws_caller_identity.current.account_id}:log-group:/aws/eks/${local.project}/application"]
